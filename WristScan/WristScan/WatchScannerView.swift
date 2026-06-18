@@ -159,7 +159,7 @@ struct ParsedWatchDetails {
 
 // MARK: - Vision OCR + custom words are handled inside CameraPreviewLayer above.
 
-// MARK: - Watch Text Parser (Catalog Scoring Engine)
+// MARK: - Watch Text Parser (Levenshtein Fuzzy Engine)
 
 enum WatchTextParser {
 
@@ -167,54 +167,100 @@ enum WatchTextParser {
 
     /// Corrects known OCR hallucinations before any parsing occurs.
     private static func sanitize(_ lines: [String]) -> [String] {
-        lines.map { line in
-            // Vision's language model autocorrects "GMT" → "Gourmet" — reverse that.
-            line.replacingOccurrences(of: "GOURMET", with: "GMT", options: .caseInsensitive)
+        lines.map {
+            $0.replacingOccurrences(of: "GOURMET", with: "GMT", options: .caseInsensitive)
         }
+    }
+
+    // MARK: - Levenshtein Distance
+
+    /// Classic DP Levenshtein edit distance between two strings.
+    /// Operates on Character arrays so Unicode grapheme clusters are handled correctly.
+    nonisolated static func levenshtein(_ a: String, _ b: String) -> Int {
+        let a = Array(a), b = Array(b)
+        let m = a.count, n = b.count
+        guard m > 0 else { return n }
+        guard n > 0 else { return m }
+
+        // Rolling two-row DP — O(m*n) time, O(n) space
+        var prev = Array(0...n)
+        var curr = [Int](repeating: 0, count: n + 1)
+
+        for i in 1...m {
+            curr[0] = i
+            for j in 1...n {
+                if a[i - 1] == b[j - 1] {
+                    curr[j] = prev[j - 1]
+                } else {
+                    curr[j] = 1 + min(prev[j],       // deletion
+                                      curr[j - 1],   // insertion
+                                      prev[j - 1])   // substitution
+                }
+            }
+            swap(&prev, &curr)
+        }
+        return prev[n]
+    }
+
+    // MARK: - Token-level fuzzy check
+
+    /// Returns true if any whitespace-separated token in `line` fuzzy-matches `target`
+    /// within the given edit-distance `threshold`.
+    nonisolated private static func tokenMatches(
+        _ line: String,
+        target: String,
+        threshold: Int
+    ) -> Bool {
+        let lowerTarget = target.lowercased()
+        // Also check the whole line — OCR may merge words
+        let lowerLine = line.lowercased()
+        if levenshtein(lowerLine, lowerTarget) <= threshold { return true }
+        return lowerLine
+            .components(separatedBy: .whitespacesAndNewlines)
+            .contains { levenshtein($0, lowerTarget) <= threshold }
     }
 
     // MARK: - Scoring
 
-    /// Score a single catalog entry against the sanitized OCR lines.
-    /// Returns an Int score; higher = stronger match.
-    private static func score(watch: WatchCatalogItem, lines: [String]) -> Int {
+    /// Scores a single catalog entry against sanitized OCR lines using fuzzy matching.
+    /// Scoring weights:
+    ///   +1  manufacturer match   (distance ≤ 2)
+    ///   +2  alias match          (distance ≤ 1)
+    ///   +5  reference number     (distance ≤ 1  — high precision required)
+    nonisolated private static func score(
+        watch: WatchCatalogItem,
+        lines: [String]
+    ) -> Int {
         var total = 0
-        let lowerManufacturer = watch.manufacturer.lowercased()
-        let lowerRef          = watch.referenceNumber.lowercased()
-        let lowerAliases      = watch.aliases.map { $0.lowercased() }
-
         for line in lines {
-            let lower = line.lowercased()
-
-            // +1 — manufacturer name visible on dial
-            if lower.contains(lowerManufacturer) {
+            // Manufacturer: forgiving threshold (handles glare-dropped letters)
+            if tokenMatches(line, target: watch.manufacturer, threshold: 2) {
                 total += 1
             }
-
-            // +2 — any alias / colloquial name matched
-            for alias in lowerAliases where lower.contains(alias) {
+            // Aliases: tight threshold (short tokens, 1 typo max)
+            for alias in watch.aliases where tokenMatches(line, target: alias, threshold: 1) {
                 total += 2
             }
-
-            // +5 — reference number is a definitive hit
-            if lower.contains(lowerRef) {
+            // Reference number: tight threshold (alphanumeric, 1 transposition max)
+            if tokenMatches(line, target: watch.referenceNumber, threshold: 1) {
                 total += 5
             }
         }
         return total
     }
 
-    // MARK: - Parse
+    // MARK: - Parse  (nonisolated — safe to call from detached Tasks)
 
-    /// Primary entry point.
     /// Scores every catalog entry against the OCR lines and returns the best match.
-    /// Falls back to an "Unknown" result when the catalog is empty or no line matches.
-    static func parse(lines: [String], catalog: [WatchCatalogItem]) -> ParsedWatchDetails {
+    /// Marked `nonisolated` so callers can run this inside `Task.detached` without
+    /// inheriting any actor context.
+    nonisolated static func parse(
+        lines: [String],
+        catalog: [WatchCatalogItem]
+    ) -> ParsedWatchDetails {
         let clean = sanitize(lines)
 
-        // --- Catalog scoring pass ---
         if !catalog.isEmpty {
-            // Build (score, item) pairs and find the winner.
             let scored = catalog.map { (score: score(watch: $0, lines: clean), item: $0) }
             if let best = scored.max(by: { $0.score < $1.score }), best.score > 0 {
                 return ParsedWatchDetails(
@@ -226,8 +272,6 @@ enum WatchTextParser {
             }
         }
 
-        // --- Fallback: no catalog hit ---
-        // Return a minimal unknown result so the caller can surface a failure state.
         return ParsedWatchDetails(
             manufacturer:    "Unknown",
             name:            "Unknown",
@@ -404,41 +448,49 @@ struct WatchScannerView: View {
     }
 
     /// Called on the main thread with raw OCR lines from the camera layer.
-    /// Runs the catalog scoring engine here so @Query catalog is accessible.
+    /// Offloads the Levenshtein comparison matrix to a detached background task
+    /// to avoid blocking the main thread / dropping frames.
     private func handleRawLines(_ lines: [String]) {
         withAnimation { scanPhase = .recognizing }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            guard !lines.isEmpty else {
-                withAnimation {
-                    scanPhase = .failed("Could not read dial text.\nTry better lighting or move closer.")
-                    isProcessing = false
-                }
-                return
+        guard !lines.isEmpty else {
+            withAnimation {
+                scanPhase = .failed("Could not read dial text.\nTry better lighting or move closer.")
+                isProcessing = false
             }
+            return
+        }
 
-            // Score OCR lines against the live SwiftData catalog.
-            let details = WatchTextParser.parse(lines: lines, catalog: catalog)
+        // Capture catalog as a plain array — value type, safe to send across concurrency domains.
+        let catalogSnapshot = catalog
 
-            if details.manufacturer == "Unknown" {
-                withAnimation {
-                    scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
-                    isProcessing = false
+        Task.detached(priority: .userInitiated) {
+            // Levenshtein scoring runs entirely off the main thread.
+            let details = WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
+
+            // Brief pause so the "Reading dial text…" label is visible to the user.
+            try? await Task.sleep(nanoseconds: 600_000_000)   // 0.6 s
+
+            await MainActor.run {
+                if details.manufacturer == "Unknown" {
+                    withAnimation {
+                        scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
+                        isProcessing = false
+                    }
+                    return
                 }
-                return
+
+                let timepiece = WatchTimepiece(
+                    manufacturer:    details.manufacturer,
+                    name:            details.name,
+                    referenceNumber: details.referenceNumber,
+                    purchaseDate:    Date(),
+                    purchasePrice:   0.0
+                )
+                context.insert(timepiece)
+                withAnimation { isProcessing = false }
+                showingScanner = false
             }
-
-            let timepiece = WatchTimepiece(
-                manufacturer:    details.manufacturer,
-                name:            details.name,
-                referenceNumber: details.referenceNumber,
-                purchaseDate:    Date(),
-                purchasePrice:   0.0
-            )
-            context.insert(timepiece)
-
-            withAnimation { isProcessing = false }
-            showingScanner = false
         }
     }
 
