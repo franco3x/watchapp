@@ -10,52 +10,165 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query(sort: \WatchTimepiece.purchaseDate, order: .reverse) private var timepieces: [WatchTimepiece]
+
+    @State private var showingScanner = false
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        NavigationStack {
+            ZStack {
+                // Background dark theme
+                Color(red: 0.07, green: 0.07, blue: 0.08)
+                    .ignoresSafeArea()
+
+                if timepieces.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 60, weight: .ultraLight))
+                            .foregroundColor(.gray)
+                        Text("Your Watch Box is Empty")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.8))
+                        Text("Tap + to add a timepiece.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(timepieces) { timepiece in
+                                WatchCardView(timepiece: timepiece)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(timepiece)
+                                        } label: {
+                                            Label("Remove", systemImage: "trash")
+                                        }
+                                    }
+                            }
+                        }
+                        .padding(16)
                     }
                 }
-                .onDelete(perform: deleteItems)
             }
+            .navigationTitle("Watch Box")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showingScanner = true }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                            .padding(8)
+                            .background(Color.amberGold.opacity(0.1))
+                            .clipShape(Circle())
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color(red: 0.07, green: 0.07, blue: 0.08), for: .navigationBar)
+        }
+        .fullScreenCover(isPresented: $showingScanner) {
+            WatchScannerView(showingScanner: $showingScanner)
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
+}
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+struct WatchCardView: View {
+    let timepiece: WatchTimepiece
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Manufacturer label (minimalist, small caps/uppercase)
+            Text(timepiece.manufacturer.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .foregroundColor(.amberGold)
+                .tracking(1.5)
+            
+            // Watch Name
+            Text(timepiece.name)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+            
+            // Reference Number
+            Text(timepiece.referenceNumber)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(.gray)
+                .lineLimit(1)
+            
+            Spacer(minLength: 8)
+            
+            // Footer: price and wear counter button
+            HStack {
+                Text("$\(timepiece.purchasePrice, specifier: "%.0f")")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.8))
+                
+                Spacer()
+                
+                // Wear counter visual pill
+                HStack(spacing: 4) {
+                    Image(systemName: "hand.tap.fill")
+                        .font(.system(size: 9))
+                    Text("\(timepiece.timesWorn)")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.amberGold.opacity(0.15))
+                .foregroundColor(.amberGold)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
+                )
             }
         }
+        .padding(14)
+        .frame(height: 140)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.12, green: 0.12, blue: 0.14),
+                            Color(red: 0.09, green: 0.09, blue: 0.10)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .contentShape(Rectangle()) // Ensures the whole tile is tappable
+        .highPriorityGesture(
+            TapGesture(count: 2).onEnded {
+                timepiece.timesWorn += 1
+            }
+        )
+        .onTapGesture {
+            // Placeholder for single-tap detailed view navigation
+            print("Navigate to detailed view for \(timepiece.name)")
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: timepiece.timesWorn)
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: WatchTimepiece.self, inMemory: true)
 }

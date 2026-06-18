@@ -1,0 +1,29 @@
+[
+  {
+    "manufacturer": "Seiko",
+    "modelName": "Seiko 5 Sports GMT",
+    "referenceNumber": "SSK001",
+    "aliases": ["Seiko GMT", "5 Sports"],
+    "primaryStyle": "Sport",
+    "dialColor": "Black",
+    "priceTier": "Budget"
+  },
+  {
+    "manufacturer": "Orient",
+    "modelName": "Mako II",
+    "referenceNumber": "FAA02002D9",
+    "aliases": ["Orient Mako", "Mako 2"],
+    "primaryStyle": "Diver",
+    "dialColor": "Blue",
+    "priceTier": "Budget"
+  },
+  {
+    "manufacturer": "Rolex",
+    "modelName": "GMT-Master II",
+    "referenceNumber": "126710BLRO",
+    "aliases": ["Pepsi", "GMT Master", "Rolex GMT"],
+    "primaryStyle": "Sport",
+    "dialColor": "Black",
+    "priceTier": "Luxury"
+  }
+]

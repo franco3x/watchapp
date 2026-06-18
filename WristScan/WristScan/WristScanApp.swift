@@ -1,32 +1,31 @@
-//
-//  WristScanApp.swift
-//  WristScan
-//
-//  Created by Frank Coleman on 6/17/26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct WristScanApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+    let container: ModelContainer
+    
+    init() {
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            // Only initialize the container here. No async Tasks.
+            container = try ModelContainer(for: WatchCatalogItem.self, WatchTimepiece.self)
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("Failed to configure SwiftData Container: \(error.localizedDescription)")
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // Attach the hydration task directly to the view hierarchy
+                .task {
+                    do {
+                        try await HydrationManager.seedDatabaseIfNeeded(context: container.mainContext)
+                    } catch {
+                        print("[Database] Hydration failed: \(error)")
+                    }
+                }
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(container)
     }
 }
