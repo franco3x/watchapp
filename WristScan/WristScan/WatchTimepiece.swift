@@ -17,6 +17,8 @@ final class WatchTimepiece {
     var purchasePrice: Double
     var timesWorn: Int
     
+    @Relationship(deleteRule: .cascade, inverse: \WatchModification.timepiece) var modifications: [WatchModification]?
+    
     init(
         manufacturer: String,
         name: String,
@@ -30,5 +32,6 @@ final class WatchTimepiece {
         self.purchaseDate = purchaseDate
         self.purchasePrice = purchasePrice
         self.timesWorn = 0
+        self.modifications = []
     }
 }

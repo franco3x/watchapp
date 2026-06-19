@@ -257,27 +257,29 @@ enum WatchTextParser {
     nonisolated static func parse(
         lines: [String],
         catalog: [WatchCatalogItem]
-    ) -> ParsedWatchDetails {
-        let clean = sanitize(lines)
+    ) async -> ParsedWatchDetails {
+        await Task.detached(priority: .userInitiated) {
+            let clean = sanitize(lines)
 
-        if !catalog.isEmpty {
-            let scored = catalog.map { (score: score(watch: $0, lines: clean), item: $0) }
-            if let best = scored.max(by: { $0.score < $1.score }), best.score > 0 {
-                return ParsedWatchDetails(
-                    manufacturer:    best.item.manufacturer,
-                    name:            best.item.modelName,
-                    referenceNumber: best.item.referenceNumber,
-                    rawLines:        clean
-                )
+            if !catalog.isEmpty {
+                let scored = catalog.map { (score: score(watch: $0, lines: clean), item: $0) }
+                if let best = scored.max(by: { $0.score < $1.score }), best.score > 0 {
+                    return ParsedWatchDetails(
+                        manufacturer:    best.item.manufacturer,
+                        name:            best.item.modelName,
+                        referenceNumber: best.item.referenceNumber,
+                        rawLines:        clean
+                    )
+                }
             }
-        }
 
-        return ParsedWatchDetails(
-            manufacturer:    "Unknown",
-            name:            "Unknown",
-            referenceNumber: "—",
-            rawLines:        clean
-        )
+            return ParsedWatchDetails(
+                manufacturer:    "Unknown",
+                name:            "Unknown",
+                referenceNumber: "—",
+                rawLines:        clean
+            )
+        }.value
     }
 }
 
@@ -464,33 +466,31 @@ struct WatchScannerView: View {
         // Capture catalog as a plain array — value type, safe to send across concurrency domains.
         let catalogSnapshot = catalog
 
-        Task.detached(priority: .userInitiated) {
-            // Levenshtein scoring runs entirely off the main thread.
-            let details = WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
+        Task {
+            // Await the new async parse function which runs its calculations inside a background Task.detached.
+            let details = await WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
 
             // Brief pause so the "Reading dial text…" label is visible to the user.
             try? await Task.sleep(nanoseconds: 600_000_000)   // 0.6 s
 
-            await MainActor.run {
-                if details.manufacturer == "Unknown" {
-                    withAnimation {
-                        scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
-                        isProcessing = false
-                    }
-                    return
+            if details.manufacturer == "Unknown" {
+                withAnimation {
+                    scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
+                    isProcessing = false
                 }
-
-                let timepiece = WatchTimepiece(
-                    manufacturer:    details.manufacturer,
-                    name:            details.name,
-                    referenceNumber: details.referenceNumber,
-                    purchaseDate:    Date(),
-                    purchasePrice:   0.0
-                )
-                context.insert(timepiece)
-                withAnimation { isProcessing = false }
-                showingScanner = false
+                return
             }
+
+            let timepiece = WatchTimepiece(
+                manufacturer:    details.manufacturer,
+                name:            details.name,
+                referenceNumber: details.referenceNumber,
+                purchaseDate:    Date(),
+                purchasePrice:   0.0
+            )
+            context.insert(timepiece)
+            withAnimation { isProcessing = false }
+            showingScanner = false
         }
     }
 
