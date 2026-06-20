@@ -17,8 +17,8 @@ final class CameraPreviewLayer: NSObject {
     let session = AVCaptureSession()
     private(set) var photoOutput = AVCapturePhotoOutput()
 
-    // Callback invoked on the main thread with raw OCR lines after capture
-    var onRawLines: (([String]) -> Void)?
+    // Callback invoked on the main thread with raw OCR lines and image data after capture
+    var onCapture: (([String], Data?) -> Void)?
 
     override init() {
         super.init()
@@ -93,12 +93,12 @@ extension CameraPreviewLayer: AVCapturePhotoCaptureDelegate {
               let cgImage = uiImage.cgImage
         else {
             DispatchQueue.main.async { [weak self] in
-                self?.onRawLines?([])   // empty array signals capture failure
+                self?.onCapture?([], nil)   // empty array signals capture failure
             }
             return
         }
 
-        recognizeText(in: cgImage)
+        recognizeText(in: cgImage, data: data)
     }
 }
 
@@ -106,14 +106,14 @@ extension CameraPreviewLayer: AVCapturePhotoCaptureDelegate {
 
 private extension CameraPreviewLayer {
 
-    func recognizeText(in cgImage: CGImage) {
+    func recognizeText(in cgImage: CGImage, data: Data) {
         let request = VNRecognizeTextRequest { [weak self] request, error in
             guard let observations = request.results as? [VNRecognizedTextObservation],
                   error == nil
             else {
                 DispatchQueue.main.async {
                     // Deliver an empty array so the view can show a failure state.
-                    self?.onRawLines?([])
+                    self?.onCapture?([], nil)
                 }
                 return
             }
@@ -121,11 +121,12 @@ private extension CameraPreviewLayer {
             let lines = observations.compactMap { $0.topCandidates(1).first?.string }
 
             DispatchQueue.main.async {
-                self?.onRawLines?(lines)
+                self?.onCapture?(lines, data)
             }
         }
 
         request.recognitionLevel = .accurate
+        request.minimumTextHeight = 0.01
         request.usesLanguageCorrection = false
         request.customWords = [
             "GMT", "Rolex", "Orient", "Bulova", "Seiko",
@@ -251,34 +252,25 @@ enum WatchTextParser {
 
     // MARK: - Parse  (nonisolated — safe to call from detached Tasks)
 
-    /// Scores every catalog entry against the OCR lines and returns the best match.
+    /// Scores every catalog entry against the OCR lines and returns all best matches.
     /// Marked `nonisolated` so callers can run this inside `Task.detached` without
     /// inheriting any actor context.
     nonisolated static func parse(
         lines: [String],
         catalog: [WatchCatalogItem]
-    ) async -> ParsedWatchDetails {
+    ) async -> [WatchCatalogItem] {
         await Task.detached(priority: .userInitiated) {
             let clean = sanitize(lines)
 
             if !catalog.isEmpty {
                 let scored = catalog.map { (score: score(watch: $0, lines: clean), item: $0) }
-                if let best = scored.max(by: { $0.score < $1.score }), best.score > 0 {
-                    return ParsedWatchDetails(
-                        manufacturer:    best.item.manufacturer,
-                        name:            best.item.modelName,
-                        referenceNumber: best.item.referenceNumber,
-                        rawLines:        clean
-                    )
+                guard let maxScore = scored.max(by: { $0.score < $1.score })?.score, maxScore > 0 else {
+                    return []
                 }
+                return scored.filter { $0.score == maxScore }.map { $0.item }
             }
 
-            return ParsedWatchDetails(
-                manufacturer:    "Unknown",
-                name:            "Unknown",
-                referenceNumber: "—",
-                rawLines:        clean
-            )
+            return []
         }.value
     }
 }
@@ -299,6 +291,10 @@ struct WatchScannerView: View {
     @State private var scanPhase: ScanPhase = .ready
     @State private var rawOCRLines: [String] = []
     @State private var showingManualSearch = false
+    @State private var isSuccessLocked = false
+    @State private var tiedMatches: [WatchCatalogItem] = []
+    @State private var showingDisambiguation = false
+    @State private var capturedImageData: Data? = nil
 
     private let cutoutDiameter: CGFloat = 260
 
@@ -317,7 +313,7 @@ struct WatchScannerView: View {
                     .ignoresSafeArea()
 
                 // 2. Dark frosted overlay with circular cutout + single amberGold ring
-                OverlayWithCutout(cutoutDiameter: cutoutDiameter, isProcessing: isProcessing)
+                OverlayWithCutout(cutoutDiameter: cutoutDiameter, isProcessing: isProcessing, isSuccessLocked: isSuccessLocked)
                     .ignoresSafeArea()
 
                 // 3. Content column
@@ -359,13 +355,24 @@ struct WatchScannerView: View {
         }
         .ignoresSafeArea()
         .onAppear {
+            isSuccessLocked = false
             camera.start()
-            camera.onRawLines = handleRawLines
+            camera.onCapture = handleScanResult
         }
         .onDisappear { camera.stop() }
         .sheet(isPresented: $showingManualSearch) {
             CatalogSelectionView { selectedItem in
                 saveFromCatalog(selectedItem)
+            }
+        }
+        .confirmationDialog("Select Watch Model", isPresented: $showingDisambiguation, titleVisibility: .visible) {
+            ForEach(tiedMatches, id: \.id) { item in
+                Button("\(item.manufacturer) \(item.modelName) (\(item.dialColor))") {
+                    saveAndSuccess(item: item, imageData: capturedImageData)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                resetToReady()
             }
         }
         .preferredColorScheme(.dark)
@@ -449,10 +456,34 @@ struct WatchScannerView: View {
         camera.capturePhoto()
     }
 
-    /// Called on the main thread with raw OCR lines from the camera layer.
+    private func saveAndSuccess(item: WatchCatalogItem, imageData: Data?) {
+        let timepiece = WatchTimepiece(
+            manufacturer:    item.manufacturer,
+            name:            item.modelName,
+            referenceNumber: item.referenceNumber,
+            purchaseDate:    Date(),
+            purchasePrice:   0.0,
+            imageData:       imageData
+        )
+        
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        
+        withAnimation {
+            scanPhase = .recognizing
+            isSuccessLocked = true
+            isProcessing = false
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            context.insert(timepiece)
+            showingScanner = false
+        }
+    }
+
+    /// Called on the main thread with raw OCR lines and image data from the camera layer.
     /// Offloads the Levenshtein comparison matrix to a detached background task
     /// to avoid blocking the main thread / dropping frames.
-    private func handleRawLines(_ lines: [String]) {
+    private func handleScanResult(_ lines: [String], _ imageData: Data?) {
         withAnimation { scanPhase = .recognizing }
 
         guard !lines.isEmpty else {
@@ -465,15 +496,16 @@ struct WatchScannerView: View {
 
         // Capture catalog as a plain array — value type, safe to send across concurrency domains.
         let catalogSnapshot = catalog
+        capturedImageData = imageData
 
         Task {
             // Await the new async parse function which runs its calculations inside a background Task.detached.
-            let details = await WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
+            let matches = await WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
 
             // Brief pause so the "Reading dial text…" label is visible to the user.
             try? await Task.sleep(nanoseconds: 600_000_000)   // 0.6 s
 
-            if details.manufacturer == "Unknown" {
+            if matches.isEmpty {
                 withAnimation {
                     scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
                     isProcessing = false
@@ -481,16 +513,13 @@ struct WatchScannerView: View {
                 return
             }
 
-            let timepiece = WatchTimepiece(
-                manufacturer:    details.manufacturer,
-                name:            details.name,
-                referenceNumber: details.referenceNumber,
-                purchaseDate:    Date(),
-                purchasePrice:   0.0
-            )
-            context.insert(timepiece)
-            withAnimation { isProcessing = false }
-            showingScanner = false
+            if matches.count == 1 {
+                saveAndSuccess(item: matches[0], imageData: imageData)
+            } else {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                tiedMatches = matches
+                showingDisambiguation = true
+            }
         }
     }
 
@@ -498,6 +527,7 @@ struct WatchScannerView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
             scanPhase = .ready
             isProcessing = false
+            isSuccessLocked = false
         }
     }
 
@@ -537,6 +567,7 @@ private extension WatchScannerView.ScanPhase {
 struct OverlayWithCutout: View {
     let cutoutDiameter: CGFloat
     var isProcessing: Bool = false
+    var isSuccessLocked: Bool = false
 
     var body: some View {
         GeometryReader { geo in
@@ -558,7 +589,7 @@ struct OverlayWithCutout: View {
 
             // Single amberGold bezel ring — absolutely centered over the cutout
             Circle()
-                .stroke(Color.amberGold, lineWidth: 2)
+                .stroke(isSuccessLocked ? Color.green : Color.amberGold, lineWidth: 2)
                 .frame(width: cutoutDiameter, height: cutoutDiameter)
                 .scaleEffect(isProcessing ? 1.06 : 1.0)
                 .animation(

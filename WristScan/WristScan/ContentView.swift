@@ -44,14 +44,17 @@ struct ContentView: View {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(timepieces) { timepiece in
-                                WatchCardView(timepiece: timepiece)
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            modelContext.delete(timepiece)
-                                        } label: {
-                                            Label("Remove", systemImage: "trash")
-                                        }
+                                NavigationLink(destination: WatchDetailView(timepiece: timepiece)) {
+                                    WatchCardView(timepiece: timepiece)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(timepiece)
+                                    } label: {
+                                        Label("Remove", systemImage: "trash")
                                     }
+                                }
                             }
                         }
                         .padding(16)
@@ -87,55 +90,74 @@ struct WatchCardView: View {
     let timepiece: WatchTimepiece
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Manufacturer label (minimalist, small caps/uppercase)
-            Text(timepiece.manufacturer.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundColor(.amberGold)
-                .tracking(1.5)
-            
-            // Watch Name
-            Text(timepiece.name)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
-                .lineLimit(1)
-            
-            // Reference Number
-            Text(timepiece.referenceNumber)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundColor(.gray)
-                .lineLimit(1)
-            
-            Spacer(minLength: 8)
-            
-            // Footer: price and wear counter button
-            HStack {
-                Text("$\(timepiece.purchasePrice, specifier: "%.0f")")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.8))
-                
-                Spacer()
-                
-                // Wear counter visual pill
-                HStack(spacing: 4) {
-                    Image(systemName: "hand.tap.fill")
-                        .font(.system(size: 9))
-                    Text("\(timepiece.timesWorn)")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.amberGold.opacity(0.15))
-                .foregroundColor(.amberGold)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
-                )
+        VStack(alignment: .leading, spacing: 0) {
+            if let data = timepiece.imageData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 120)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color(red: 0.15, green: 0.15, blue: 0.17))
+                    .frame(height: 120)
+                    .overlay(
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray.opacity(0.5))
+                    )
             }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                // Manufacturer label (minimalist, small caps/uppercase)
+                Text(timepiece.manufacturer.uppercased())
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.amberGold)
+                    .tracking(1.5)
+                
+                // Watch Name
+                Text(timepiece.name)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                // Reference Number
+                Text(timepiece.referenceNumber)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                
+                Spacer(minLength: 8)
+                
+                // Footer: price and wear counter button
+                HStack {
+                    Text("$\(timepiece.purchasePrice, specifier: "%.0f")")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.8))
+                    
+                    Spacer()
+                    
+                    // Wear counter visual pill
+                    HStack(spacing: 4) {
+                        Image(systemName: "hand.tap.fill")
+                            .font(.system(size: 9))
+                        Text("\(timepiece.timesWorn)")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.amberGold.opacity(0.15))
+                    .foregroundColor(.amberGold)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
+            .padding(14)
         }
-        .padding(14)
-        .frame(height: 140)
+        .frame(height: 240)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(
@@ -153,6 +175,7 @@ struct WatchCardView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
         .contentShape(Rectangle()) // Ensures the whole tile is tappable
         .highPriorityGesture(
@@ -160,10 +183,6 @@ struct WatchCardView: View {
                 timepiece.timesWorn += 1
             }
         )
-        .onTapGesture {
-            // Placeholder for single-tap detailed view navigation
-            print("Navigate to detailed view for \(timepiece.name)")
-        }
         .sensoryFeedback(.impact(weight: .light), trigger: timepiece.timesWorn)
     }
 }

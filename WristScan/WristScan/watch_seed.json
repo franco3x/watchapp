@@ -25,5 +25,15 @@
     "primaryStyle": "Sport",
     "dialColor": "Black",
     "priceTier": "Luxury"
+  },
+  {
+    "manufacturer": "Seiko",
+    "modelName": "Seiko 5 Sports GMT Blueberry",
+    "referenceNumber": "SSK003",
+    "aliases": ["Seiko GMT", "5 Sports", "Blueberry"],
+    "primaryStyle": "Sport",
+    "dialColor": "Blue",
+    "priceTier": "Budget"
   }
 ]
+
