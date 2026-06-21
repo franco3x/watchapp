@@ -8,12 +8,37 @@
 import SwiftUI
 import SwiftData
 
+enum SortOption: String, CaseIterable {
+    case dateAdded = "Date Added"
+    case manufacturer = "Manufacturer"
+    case price = "Highest Price"
+    case mostWorn = "Most Worn"
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \WatchTimepiece.purchaseDate, order: .reverse) private var timepieces: [WatchTimepiece]
 
     @State private var showingScanner = false
     @State private var showingSettings = false
+    @State private var selectedSort: SortOption = .dateAdded
+
+    var sortedTimepieces: [WatchTimepiece] {
+        switch selectedSort {
+        case .dateAdded:
+            return timepieces.sorted { $0.purchaseDate > $1.purchaseDate }
+        case .manufacturer:
+            return timepieceListSortedByManufacturer()
+        case .price:
+            return timepieces.sorted { $0.purchasePrice > $1.purchasePrice }
+        case .mostWorn:
+            return timepieces.sorted { $0.timesWorn > $1.timesWorn }
+        }
+    }
+    
+    private func timepieceListSortedByManufacturer() -> [WatchTimepiece] {
+        return timepieces.sorted { $0.manufacturer.localizedCompare($1.manufacturer) == .orderedAscending }
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -44,7 +69,7 @@ struct ContentView: View {
                 } else {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(timepieces) { timepiece in
+                            ForEach(sortedTimepieces) { timepiece in
                                 NavigationLink(destination: WatchDetailView(timepiece: timepiece)) {
                                     WatchCardView(timepiece: timepiece)
                                 }
@@ -65,25 +90,49 @@ struct ContentView: View {
             .navigationTitle("Watch Box")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    HStack(spacing: 12) {
-                        Button(action: { showingSettings = true }) {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.amberGold)
-                                .padding(8)
-                                .background(Color.amberGold.opacity(0.1))
-                                .clipShape(Circle())
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showingSettings = true }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                            .padding(8)
+                            .background(Color.amberGold.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        ForEach(SortOption.allCases, id: \.self) { option in
+                            Button(action: {
+                                selectedSort = option
+                            }) {
+                                HStack {
+                                    Text(option.rawValue)
+                                    if selectedSort == option {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
                         }
-                        
-                        Button(action: { showingScanner = true }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.amberGold)
-                                .padding(8)
-                                .background(Color.amberGold.opacity(0.1))
-                                .clipShape(Circle())
-                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                            .padding(8)
+                            .background(Color.amberGold.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showingScanner = true }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                            .padding(8)
+                            .background(Color.amberGold.opacity(0.1))
+                            .clipShape(Circle())
                     }
                 }
             }
