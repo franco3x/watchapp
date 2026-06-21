@@ -60,20 +60,66 @@ struct WatchDetailView: View {
                 
                 VStack(alignment: .leading, spacing: 20) {
                     // Header Block
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.amberGold)
-                            .tracking(1.5)
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
+                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.amberGold)
+                                .tracking(1.5)
+                            
+                            Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .lineLimit(2)
+                            
+                            Text(timepiece.referenceNumber.isEmpty ? "—" : timepiece.referenceNumber)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(.gray)
+                        }
                         
-                        Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
+                        Spacer()
                         
-                        Text(timepiece.referenceNumber)
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundColor(.gray)
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Button(action: {
+                                timepiece.timesWorn += 1
+                                timepiece.lastWornDate = Date.now
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }) {
+                                HStack(spacing: 8) {
+                                    Text("WRIST CHECK")
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .tracking(1.0)
+                                    
+                                    // A small vertical divider
+                                    RoundedRectangle(cornerRadius: 0.5)
+                                        .fill(Color.amberGold.opacity(0.3))
+                                        .frame(width: 1, height: 12)
+                                    
+                                    Text("\(timepiece.timesWorn)")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.amberGold.opacity(0.12))
+                                .foregroundColor(.amberGold)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            
+                            if let date = timepiece.lastWornDate {
+                                Text("Last Worn: \(date.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Last Worn: Unworn")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                        }
                     }
                     
                     // Section 1: Specifications (Core Identity)
