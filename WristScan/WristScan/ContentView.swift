@@ -11,8 +11,8 @@ import SwiftData
 enum SortOption: String, CaseIterable {
     case dateAdded = "Date Added"
     case manufacturer = "Manufacturer"
-    case price = "Highest Price"
-    case mostWorn = "Most Worn"
+    case price = "Price"
+    case timesWorn = "Times Worn"
 }
 
 struct ContentView: View {
@@ -22,22 +22,19 @@ struct ContentView: View {
     @State private var showingScanner = false
     @State private var showingSettings = false
     @State private var selectedSort: SortOption = .dateAdded
+    @State private var sortAscending: Bool = false
 
     var sortedTimepieces: [WatchTimepiece] {
         switch selectedSort {
         case .dateAdded:
-            return timepieces.sorted { $0.purchaseDate > $1.purchaseDate }
+            return timepieces.sorted { sortAscending ? $0.purchaseDate < $1.purchaseDate : $0.purchaseDate > $1.purchaseDate }
         case .manufacturer:
-            return timepieceListSortedByManufacturer()
+            return timepieces.sorted { sortAscending ? $0.manufacturer < $1.manufacturer : $0.manufacturer > $1.manufacturer }
         case .price:
-            return timepieces.sorted { $0.purchasePrice > $1.purchasePrice }
-        case .mostWorn:
-            return timepieces.sorted { $0.timesWorn > $1.timesWorn }
+            return timepieces.sorted { sortAscending ? $0.purchasePrice < $1.purchasePrice : $0.purchasePrice > $1.purchasePrice }
+        case .timesWorn:
+            return timepieces.sorted { sortAscending ? $0.timesWorn < $1.timesWorn : $0.timesWorn > $1.timesWorn }
         }
-    }
-    
-    private func timepieceListSortedByManufacturer() -> [WatchTimepiece] {
-        return timepieces.sorted { $0.manufacturer.localizedCompare($1.manufacturer) == .orderedAscending }
     }
 
     private let columns = [
@@ -105,12 +102,21 @@ struct ContentView: View {
                     Menu {
                         ForEach(SortOption.allCases, id: \.self) { option in
                             Button(action: {
-                                selectedSort = option
+                                if selectedSort == option {
+                                    sortAscending.toggle()
+                                } else {
+                                    selectedSort = option
+                                    if option == .manufacturer {
+                                        sortAscending = true
+                                    } else {
+                                        sortAscending = false
+                                    }
+                                }
                             }) {
                                 HStack {
                                     Text(option.rawValue)
                                     if selectedSort == option {
-                                        Image(systemName: "checkmark")
+                                        Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
                                     }
                                 }
                             }
