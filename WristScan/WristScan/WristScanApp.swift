@@ -16,7 +16,7 @@ struct WristScanApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
                 // Attach the hydration task directly to the view hierarchy
                 .task {
                     do {
