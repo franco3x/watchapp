@@ -127,11 +127,11 @@ struct WatchDetailView: View {
                     }
                     
                     Picker("View Selection", selection: $selectedTab) {
-                        Text("Overview").tag("Overview")
-                        Text("Stats").tag("Stats")
-                        Text("Wrist Checks").tag("Wrist Checks")
-                        Text("Service Log").tag("Service Log")
-                        Text("Accuracy").tag("Accuracy")
+                        Image(systemName: "list.bullet.clipboard").tag("Overview")
+                        Image(systemName: "chart.bar").tag("Stats")
+                        Image(systemName: "clock.badge.checkmark").tag("Wrist Checks")
+                        Image(systemName: "wrench.and.screwdriver").tag("Service Log")
+                        Image(systemName: "stopwatch").tag("Accuracy")
                     }
                     .pickerStyle(.segmented)
                     .padding(.vertical)
@@ -664,5 +664,37 @@ struct AddModificationView: View {
                 }
             }
         }
+    }
+}
+
+#Preview {
+    do {
+        // 1. Create a temporary memory-only database
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: WatchTimepiece.self, configurations: config)
+        
+        // 2. Create a fake watch to populate the UI
+        let dummyWatch = WatchTimepiece(
+            manufacturer: "Rolex",
+            name: "Submariner",
+            referenceNumber: "124060",
+            purchaseDate: Date(),
+            purchasePrice: 9100.0
+        )
+        dummyWatch.dialColor = "Black"
+        dummyWatch.caseSize = 41.0
+        dummyWatch.movementType = "Automatic"
+        
+        // Insert it into the fake database
+        container.mainContext.insert(dummyWatch)
+        
+        // 3. Render the view
+        return NavigationStack {
+            WatchDetailView(timepiece: dummyWatch)
+        }
+        .modelContainer(container)
+        
+    } catch {
+        return Text("Failed to load preview: \(error.localizedDescription)")
     }
 }
