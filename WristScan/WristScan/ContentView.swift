@@ -21,21 +21,45 @@ struct ContentView: View {
 
     @State private var showingScanner = false
     @State private var showingSettings = false
+    @State private var showingFilters = false
+    @State private var filterManufacturer: String = "All"
+    @State private var filterWatchType: String = "All"
+    @State private var filterCaseMaterial: String = "All"
+    @State private var filterDialColor: String = "All"
+    @State private var filterMovementType: String = "All"
     @State private var selectedSort: SortOption = .dateAdded
     @State private var sortAscending: Bool = false
     /// Set after a successful scan; drives .navigationDestination to push WatchDetailView.
     @State private var newlyAddedWatch: WatchTimepiece? = nil
 
-    var sortedTimepieces: [WatchTimepiece] {
+    var filteredAndSortedTimepieces: [WatchTimepiece] {
+        var filtered = timepieces
+
+        if filterManufacturer != "All" {
+            filtered = filtered.filter { $0.manufacturer == filterManufacturer }
+        }
+        if filterWatchType != "All" {
+            filtered = filtered.filter { $0.watchType == filterWatchType }
+        }
+        if filterCaseMaterial != "All" {
+            filtered = filtered.filter { $0.caseMaterial == filterCaseMaterial }
+        }
+        if filterDialColor != "All" {
+            filtered = filtered.filter { $0.dialColor == filterDialColor }
+        }
+        if filterMovementType != "All" {
+            filtered = filtered.filter { $0.movementType == filterMovementType }
+        }
+
         switch selectedSort {
         case .dateAdded:
-            return timepieces.sorted { sortAscending ? $0.purchaseDate < $1.purchaseDate : $0.purchaseDate > $1.purchaseDate }
+            return filtered.sorted { sortAscending ? $0.purchaseDate < $1.purchaseDate : $0.purchaseDate > $1.purchaseDate }
         case .manufacturer:
-            return timepieces.sorted { sortAscending ? $0.manufacturer < $1.manufacturer : $0.manufacturer > $1.manufacturer }
+            return filtered.sorted { sortAscending ? $0.manufacturer < $1.manufacturer : $0.manufacturer > $1.manufacturer }
         case .price:
-            return timepieces.sorted { sortAscending ? $0.purchasePrice < $1.purchasePrice : $0.purchasePrice > $1.purchasePrice }
+            return filtered.sorted { sortAscending ? $0.purchasePrice < $1.purchasePrice : $0.purchasePrice > $1.purchasePrice }
         case .timesWorn:
-            return timepieces.sorted { sortAscending ? $0.timesWorn < $1.timesWorn : $0.timesWorn > $1.timesWorn }
+            return filtered.sorted { sortAscending ? $0.timesWorn < $1.timesWorn : $0.timesWorn > $1.timesWorn }
         }
     }
 
@@ -65,10 +89,39 @@ struct ContentView: View {
                             .foregroundColor(.secondary)
                     }
                     .padding()
+                } else if filteredAndSortedTimepieces.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 60, weight: .ultraLight))
+                            .foregroundColor(.gray)
+                        Text("No Matching Watches")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.8))
+                        Text("Try adjusting your filter options.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            filterManufacturer = "All"
+                            filterWatchType = "All"
+                            filterCaseMaterial = "All"
+                        }) {
+                            Text("Reset Filters")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.amberGold)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.amberGold.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding()
                 } else {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(sortedTimepieces) { timepiece in
+                            ForEach(filteredAndSortedTimepieces) { timepiece in
                                 NavigationLink(destination: WatchDetailView(timepiece: timepiece)) {
                                     WatchCardView(timepiece: timepiece)
                                 }
@@ -101,6 +154,18 @@ struct ContentView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
+                    let filtersActive = filterManufacturer != "All" || filterWatchType != "All" || filterCaseMaterial != "All" || filterDialColor != "All" || filterMovementType != "All"
+                    Button(action: { showingFilters = true }) {
+                        Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(filtersActive ? .black : .amberGold)
+                            .padding(8)
+                            .background(filtersActive ? Color.amberGold : Color.amberGold.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         ForEach(SortOption.allCases, id: \.self) { option in
                             Button(action: {
@@ -124,7 +189,7 @@ struct ContentView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
+                        Image(systemName: "arrow.up.arrow.down.circle")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.amberGold)
                             .padding(8)
@@ -162,6 +227,16 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showingFilters) {
+            FilterSheetView(
+                timepieces: timepieces,
+                selectedManufacturer: $filterManufacturer,
+                selectedWatchType: $filterWatchType,
+                selectedCaseMaterial: $filterCaseMaterial,
+                selectedDialColor: $filterDialColor,
+                selectedMovementType: $filterMovementType
+            )
         }
     }
 

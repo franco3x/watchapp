@@ -13,11 +13,7 @@ struct EditWatchView: View {
     @Bindable var timepiece: WatchTimepiece
     @Environment(\.dismiss) var dismiss
     
-    @State private var priceInput: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
-    @State private var caseSizeInput: String = ""
-    @State private var lugToLugInput: String = ""
-    @State private var lugWidthInput: String = ""
     
     let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
     
@@ -104,8 +100,7 @@ struct EditWatchView: View {
                     Text("Purchase Price")
                         .foregroundColor(.white)
                     Spacer()
-                    TextField("0.00", text: $priceInput)
-                        .keyboardType(.decimalPad)
+                    DecimalTextField(title: "0.00", value: $timepiece.purchasePrice)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.gray)
                 }
@@ -227,8 +222,7 @@ struct EditWatchView: View {
                     Text("Case Size")
                         .foregroundColor(.white)
                     Spacer()
-                    TextField("e.g. 40.0", text: $caseSizeInput)
-                        .keyboardType(.decimalPad)
+                    DecimalTextField(title: "e.g. 40.0", value: $timepiece.caseSize)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.gray)
                 }
@@ -238,8 +232,7 @@ struct EditWatchView: View {
                     Text("Lug to Lug")
                         .foregroundColor(.white)
                     Spacer()
-                    TextField("e.g. 47.0", text: $lugToLugInput)
-                        .keyboardType(.decimalPad)
+                    DecimalTextField(title: "e.g. 47.0", value: $timepiece.lugToLug)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.gray)
                 }
@@ -249,8 +242,7 @@ struct EditWatchView: View {
                     Text("Lug Width")
                         .foregroundColor(.white)
                     Spacer()
-                    TextField("e.g. 20.0", text: $lugWidthInput)
-                        .keyboardType(.decimalPad)
+                    DecimalTextField(title: "e.g. 20.0", value: $timepiece.lugWidth)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.gray)
                 }
@@ -294,21 +286,11 @@ struct EditWatchView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color(red: 0.07, green: 0.07, blue: 0.08))
-        .onAppear {
-            priceInput = timepiece.purchasePrice == 0.0 ? "" : String(format: "%.2f", timepiece.purchasePrice)
-            caseSizeInput = timepiece.caseSize == 0.0 ? "" : String(format: "%.1f", timepiece.caseSize)
-            lugToLugInput = timepiece.lugToLug == 0.0 ? "" : String(format: "%.1f", timepiece.lugToLug)
-            lugWidthInput = timepiece.lugWidth == 0.0 ? "" : String(format: "%.1f", timepiece.lugWidth)
-        }
         .navigationTitle("Edit Watch")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
-                    timepiece.purchasePrice = Double(priceInput) ?? 0.0
-                    timepiece.caseSize = Double(caseSizeInput) ?? 0.0
-                    timepiece.lugToLug = Double(lugToLugInput) ?? 0.0
-                    timepiece.lugWidth = Double(lugWidthInput) ?? 0.0
                     timepiece.name = timepiece.modelName
                     dismiss()
                 }
