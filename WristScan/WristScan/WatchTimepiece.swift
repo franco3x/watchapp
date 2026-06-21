@@ -23,6 +23,7 @@ final class WatchTimepiece {
     var movementType: String = ""
     var movement: String = ""
     var notes: String = ""
+    var watchType: String = ""
     
     init(
         manufacturer: String,
@@ -44,6 +45,7 @@ final class WatchTimepiece {
         self.movementType = ""
         self.movement = ""
         self.notes = ""
+        self.watchType = ""
     }
 }
 

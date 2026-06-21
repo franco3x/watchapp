@@ -80,6 +80,8 @@ struct WatchDetailView: View {
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
                             Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Watch Type", value: timepiece.watchType)
+                            Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Movement Type", value: timepiece.movementType)
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Caliber", value: timepiece.movement)

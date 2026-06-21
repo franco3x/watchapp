@@ -16,6 +16,8 @@ struct EditWatchView: View {
     
     let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
     
+    let watchTypeOptions = ["Pilot", "Chronograph", "Diver", "Dress", "Everyday", "Field", "GMT", "Sports", "Digital", "Calendar"]
+    
     var body: some View {
         Form {
             Section(header: Text("Details")
@@ -76,6 +78,15 @@ struct EditWatchView: View {
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.gray)
                 }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                Picker("Watch Type", selection: $timepiece.watchType) {
+                    Text("Select").tag("")
+                    ForEach(watchTypeOptions, id: \.self) { option in
+                        Text(option).tag(option)
+                    }
+                }
+                .foregroundColor(.white)
                 .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
                 
                 Picker("Movement Type", selection: $timepiece.movementType) {
