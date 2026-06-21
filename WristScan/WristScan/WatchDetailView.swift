@@ -129,6 +129,7 @@ struct WatchDetailView: View {
                         Text("Overview").tag("Overview")
                         Text("Stats").tag("Stats")
                         Text("Wrist Checks").tag("Wrist Checks")
+                        Text("Service Log").tag("Service Log")
                     }
                     .pickerStyle(.segmented)
                     .padding(.vertical)
@@ -252,61 +253,6 @@ struct WatchDetailView: View {
                             )
                         }
                         
-                        // Section 3: Modifications
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Modification History")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            let modifications = timepiece.modifications ?? []
-                            if modifications.isEmpty {
-                                Text("No modifications recorded.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                    .italic()
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                    )
-                            } else {
-                                VStack(spacing: 12) {
-                                    ForEach(modifications) { modification in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
-                                                Text(modification.componentType)
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                                Spacer()
-                                                Text(modification.cost, format: .currency(code: "USD"))
-                                                    .font(.subheadline)
-                                                    .fontWeight(.bold)
-                                                    .foregroundColor(.amberGold)
-                                            }
-                                            
-                                            Text(modification.modificationDetails)
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                            
-                                            Text("Applied: \(modification.dateApplied.formatted(date: .abbreviated, time: .omitted))")
-                                                .font(.caption)
-                                                .foregroundColor(.gray.opacity(0.6))
-                                        }
-                                        .padding(14)
-                                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
                         // Inline Notes Scratchpad
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Notes")
@@ -421,6 +367,79 @@ struct WatchDetailView: View {
                                 )
                             }
                         }
+                    } else if selectedTab == "Service Log" {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Service & Modifications")
+                                    .font(.headline)
+                                    .foregroundColor(.amberGold)
+                                Spacer()
+                                Button {
+                                    showingAddModification = true
+                                } label: {
+                                    Image(systemName: "plus")
+                                        .font(.body.weight(.bold))
+                                        .foregroundColor(.amberGold)
+                                }
+                            }
+                            
+                            let modifications = timepiece.modifications ?? []
+                            if modifications.isEmpty {
+                                Text("No modifications recorded.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                    .italic()
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    )
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(modifications) { modification in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Text(modification.componentType)
+                                                    .font(.headline)
+                                                    .foregroundColor(.white)
+                                                Spacer()
+                                                Text(modification.cost, format: .currency(code: "USD"))
+                                                    .font(.subheadline)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(.amberGold)
+                                                    .padding(.trailing, 8)
+                                                
+                                                Button {
+                                                    timepiece.modifications?.removeAll { $0.id == modification.id }
+                                                } label: {
+                                                    Image(systemName: "trash")
+                                                        .foregroundColor(.red)
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                            
+                                            Text(modification.modificationDetails)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                            
+                                            Text("Applied: \(modification.dateApplied.formatted(date: .abbreviated, time: .omitted))")
+                                                .font(.caption)
+                                                .foregroundColor(.gray.opacity(0.6))
+                                        }
+                                        .padding(14)
+                                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -442,15 +461,6 @@ struct WatchDetailView: View {
                     showingEditSheet = true
                 }
                 .foregroundColor(.amberGold)
-            }
-            
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    showingAddModification = true
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(.amberGold)
-                }
             }
         }
         .sheet(isPresented: $showingAddModification) {
