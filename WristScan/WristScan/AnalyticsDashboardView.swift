@@ -26,6 +26,8 @@ struct AnalyticsDashboardView: View {
 
     @State private var selectedDistribution: DistributionMetric = .brand
     @State private var selectedFrequencyMetric: DistributionMetric = .watch
+    @State private var selectedCalendarDate: Date? = nil
+    @State private var selectedWatchesForLog: Set<WatchTimepiece> = []
 
     // MARK: - Computed Metrics
 
@@ -83,6 +85,17 @@ struct AnalyticsDashboardView: View {
             .map { $0 }
     }
 
+    var globalWearHistory: [Date] {
+        // Flatten all wearHistory arrays from all timepieces into a single, unique array of dates
+        let allDates = timepieces.flatMap { $0.wearHistory }
+        return Array(Set(allDates)).sorted()
+    }
+
+    private var globalWearComponents: Set<DateComponents> {
+        let components = globalWearHistory.map { Calendar.current.dateComponents([.year, .month, .day], from: $0) }
+        return Set(components)
+    }
+
     // MARK: - Palette for chart sectors
     private let sectorColors: [Color] = [
         Color(hue: 0.11, saturation: 0.85, brightness: 0.85),  // amberGold
@@ -109,6 +122,7 @@ struct AnalyticsDashboardView: View {
                             summaryCards
                             distributionChart
                             wearChart
+                            calendarSection
                         }
                         .padding(16)
                     }
@@ -336,6 +350,88 @@ struct AnalyticsDashboardView: View {
         .background(cardBackground)
     }
 
+    private var calendarBinding: Binding<Set<DateComponents>> {
+        Binding(
+            get: { globalWearComponents },
+            set: { newValue in
+                let added = newValue.subtracting(globalWearComponents)
+                let removed = globalWearComponents.subtracting(newValue)
+                
+                if let target = added.first ?? removed.first,
+                   let date = Calendar.current.date(from: target) {
+                    selectedCalendarDate = date
+                }
+            }
+        )
+    }
+
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Collection Wear Calendar")
+
+            if globalWearHistory.isEmpty {
+                missingDataLabel("No wear data recorded yet. Tap any date to begin.")
+                    .padding(.bottom, 8)
+            }
+            
+            MultiDatePicker("Wear Dates", selection: calendarBinding)
+                .datePickerStyle(.graphical)
+                .tint(.amberGold)
+        }
+        .padding(16)
+        .background(cardBackground)
+        .sheet(item: $selectedCalendarDate) { date in
+            NavigationStack {
+                List(timepieces) { timepiece in
+                    Button(action: {
+                        if selectedWatchesForLog.contains(timepiece) {
+                            selectedWatchesForLog.remove(timepiece)
+                        } else {
+                            selectedWatchesForLog.insert(timepiece)
+                        }
+                    }) {
+                        HStack {
+                            Text("\(timepiece.manufacturer) \(timepiece.name)")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: selectedWatchesForLog.contains(timepiece) ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(selectedWatchesForLog.contains(timepiece) ? .amberGold : .secondary)
+                        }
+                    }
+                }
+                .navigationTitle("Log Wrist Check")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            selectedCalendarDate = nil
+                            selectedWatchesForLog.removeAll()
+                        }
+                        .foregroundColor(.amberGold)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            for watch in selectedWatchesForLog {
+                                watch.wearHistory.append(date)
+                                watch.timesWorn += 1
+                                if let lastWorn = watch.lastWornDate {
+                                    if date > lastWorn { watch.lastWornDate = date }
+                                } else {
+                                    watch.lastWornDate = date
+                                }
+                            }
+                            selectedCalendarDate = nil
+                            selectedWatchesForLog.removeAll()
+                        }
+                        .foregroundColor(selectedWatchesForLog.isEmpty ? .gray : .amberGold)
+                        .disabled(selectedWatchesForLog.isEmpty)
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+        }
+    }
+
     // MARK: - Helpers
 
     private func sectionHeader(_ title: String) -> some View {
@@ -369,4 +465,10 @@ struct AnalyticsDashboardView: View {
                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
             )
     }
+}
+
+// MARK: - Extensions
+
+extension Date: Identifiable {
+    public var id: Double { self.timeIntervalSince1970 }
 }
