@@ -11,6 +11,7 @@ import SwiftData
 import Charts
 
 enum DistributionMetric: String, CaseIterable {
+    case watch = "Individual Watch"
     case brand = "Brand"
     case watchType = "Watch Type"
     case movementType = "Movement Type"
@@ -24,6 +25,7 @@ struct AnalyticsDashboardView: View {
     // MARK: - State
 
     @State private var selectedDistribution: DistributionMetric = .brand
+    @State private var selectedFrequencyMetric: DistributionMetric = .watch
 
     // MARK: - Computed Metrics
 
@@ -35,6 +37,7 @@ struct AnalyticsDashboardView: View {
         let mappedValues: [String]
         
         switch selectedDistribution {
+        case .watch: mappedValues = timepieces.map { $0.name }
         case .brand: mappedValues = timepieces.map { $0.manufacturer }
         case .watchType: mappedValues = timepieces.map { $0.watchType }
         case .movementType: mappedValues = timepieces.map { $0.movementType }
@@ -45,6 +48,32 @@ struct AnalyticsDashboardView: View {
         let filtered = mappedValues.filter { !$0.isEmpty }
         let counts = filtered.reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
         return counts.map { (category: $0.key, count: $0.value) }.sorted { $0.count > $1.count }
+    }
+
+    var frequencyDistribution: [(category: String, count: Int)] {
+        var aggregatedData: [String: Int] = [:]
+        
+        for timepiece in timepieces {
+            let category: String
+            switch selectedFrequencyMetric {
+            case .watch: category = timepiece.name
+            case .brand: category = timepiece.manufacturer
+            case .watchType: category = timepiece.watchType
+            case .movementType: category = timepiece.movementType
+            case .dialColor: category = timepiece.dialColor
+            case .caseMaterial: category = timepiece.caseMaterial
+            }
+            
+            guard !category.isEmpty else { continue }
+            
+            // Use the existing timesWorn integer property
+            aggregatedData[category, default: 0] += timepiece.timesWorn
+        }
+        
+        return aggregatedData.map { (category: $0.key, count: $0.value) }
+                             .sorted { $0.count > $1.count }
+                             .prefix(5)
+                             .map { $0 }
     }
 
     var mostWorn: [WatchTimepiece] {
@@ -82,6 +111,13 @@ struct AnalyticsDashboardView: View {
                             wearChart
                         }
                         .padding(16)
+                    }
+                    .onAppear {
+                        for timepiece in timepieces {
+                            if timepiece.timesWorn == 0 && !timepiece.wearHistory.isEmpty {
+                                timepiece.timesWorn = timepiece.wearHistory.count
+                            }
+                        }
                     }
                 }
             }
@@ -231,20 +267,53 @@ struct AnalyticsDashboardView: View {
 
     private var wearChart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Wear Frequency (Top 5)")
+            sectionHeader("Top 5 Wrist Checks")
 
-            if mostWorn.isEmpty || mostWorn.first?.wearHistory.isEmpty == true {
-                missingDataLabel("No wear data recorded yet.")
+            Menu {
+                ForEach(DistributionMetric.allCases, id: \.self) { metric in
+                    Button(action: { selectedFrequencyMetric = metric }) {
+                        HStack {
+                            Text(metric.rawValue)
+                            if selectedFrequencyMetric == metric {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text("By \(selectedFrequencyMetric.rawValue)")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.amberGold)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+            }
+            .padding(.bottom, 8)
+
+            if frequencyDistribution.isEmpty {
+                missingDataLabel("No data available for this metric.")
             } else {
-                Chart(mostWorn) { watch in
+                Chart(frequencyDistribution, id: \.category) { item in
                     BarMark(
-                        x: .value("Watch", watch.modelName.isEmpty ? watch.name : watch.modelName),
-                        y: .value("Wears", watch.wearHistory.count)
+                        x: .value("Category", item.category),
+                        y: .value("Count", item.count)
                     )
                     .foregroundStyle(Color.amberGold.gradient)
                     .cornerRadius(6)
                 }
                 .frame(height: 250)
+                .animation(.easeInOut, value: selectedFrequencyMetric)
                 .chartXAxis {
                     AxisMarks(values: .automatic) { _ in
                         AxisValueLabel()
