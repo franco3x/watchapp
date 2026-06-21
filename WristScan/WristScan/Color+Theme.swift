@@ -2,7 +2,7 @@
 //  Color+Theme.swift
 //  WristScan
 //
-//  Created by Antigravity.
+//  Purpose: Global design extension declaring the design system's semantic colors (like amberGold) to ensure visual uniformity.
 //
 
 import SwiftUI

@@ -2,7 +2,7 @@
 //  WatchTimepiece.swift
 //  WristScan
 //
-//  Created by Frank Coleman on 6/17/26.
+//  Purpose: SwiftData @Model representing an individual watch owned by the user, managing its core metadata, wear tracking, photography, and relationship to modifications.
 //
 
 import Foundation

@@ -2,7 +2,7 @@
 //  WatchCatalogItem.swift
 //  WristScan
 //
-//  Created by Frank Coleman on 6/17/26.
+//  Purpose: SwiftData @Model representing the local reference catalog/database of pre-loaded watch models used for OCR comparison.
 //
 
 import Foundation

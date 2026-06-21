@@ -2,7 +2,7 @@
 //  WatchScannerView.swift
 //  WristScan
 //
-//  Created by Frank Coleman on 6/17/26.
+//  Purpose: The core Vision-driven live camera scanning interface that handles frame text recognition, focus-lock haptics, and colorway disambiguation logic.
 //
 
 import SwiftUI

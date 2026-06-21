@@ -2,6 +2,8 @@
 //  HydrationManager.swift
 //  WristScan
 //
+//  Purpose: The static data utility responsible for parsing watch_seed.json on initial launch to populate the local SQL-backed catalog.
+//
 
 import Foundation
 import SwiftData

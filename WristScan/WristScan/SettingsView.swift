@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  WristScan
 //
-//  Created by Antigravity.
+//  Purpose: The user configuration space hosting data portability controls, including the localized flat-file CSV compilation and export mechanisms.
 //
 
 import SwiftUI

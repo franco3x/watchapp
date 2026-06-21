@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  WristScan
 //
-//  Created by Frank Coleman on 6/17/26.
+//  Purpose: The main dashboard UI that renders the user's Watch Box grid, handles dynamic sorting selections, and houses navigation entry points.
 //
 
 import SwiftUI
