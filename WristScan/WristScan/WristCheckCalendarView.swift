@@ -9,6 +9,7 @@ import SwiftUI
 
 struct WristCheckCalendarView: View {
     let wearHistory: [Date]
+    var onDateTapped: ((Date) -> Void)? = nil
     
     @State private var monthCount: Int = 6
     
@@ -89,7 +90,7 @@ struct WristCheckCalendarView: View {
             
             ScrollView {
                 VStack(spacing: 30) {
-                    ForEach(months, id: \.self) { month in
+                    ForEach(months.reversed(), id: \.self) { month in
                         MonthGridView(
                             month: month,
                             monthLabel: monthLabel(for: month),
@@ -99,7 +100,8 @@ struct WristCheckCalendarView: View {
                             firstWeekdayOffset: firstWeekdayOffset(month),
                             isWorn: isWorn,
                             isToday: isToday,
-                            date: { day in date(day: day, in: month) }
+                            date: { day in date(day: day, in: month) },
+                            onDateTapped: onDateTapped
                         )
                     }
                 }
@@ -123,6 +125,7 @@ private struct MonthGridView: View {
     let isWorn: (Date) -> Bool
     let isToday: (Date) -> Bool
     let date: (Int) -> Date?
+    var onDateTapped: ((Date) -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -153,11 +156,16 @@ private struct MonthGridView: View {
                 // Actual day cells
                 ForEach(1 ... daysInMonth, id: \.self) { day in
                     if let cellDate = date(day) {
-                        DayCellView(
-                            day: day,
-                            worn: isWorn(cellDate),
-                            today: isToday(cellDate)
-                        )
+                        Button {
+                            onDateTapped?(cellDate)
+                        } label: {
+                            DayCellView(
+                                day: day,
+                                worn: isWorn(cellDate),
+                                today: isToday(cellDate)
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

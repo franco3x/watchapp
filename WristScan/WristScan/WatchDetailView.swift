@@ -327,9 +327,24 @@ struct WatchDetailView: View {
                                 )
                         }
                     } else if selectedTab == "Stats" {
-                        WristCheckCalendarView(wearHistory: timepiece.wearHistory)
-                            .padding(.top)
+                        WristCheckCalendarView(wearHistory: timepiece.wearHistory) { tappedDate in
+                            // Check if the date already exists in the history (comparing by exact day)
+                            if let index = timepiece.wearHistory.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: tappedDate) }) {
+                                // If it exists, toggle it OFF (remove it)
+                                timepiece.wearHistory.remove(at: index)
+                            } else {
+                                // If it doesn't exist, toggle it ON (add it)
+                                timepiece.wearHistory.append(tappedDate)
+                            }
+                            // Recalibrate derived stats
+                            timepiece.timesWorn = timepiece.wearHistory.count
+                            timepiece.lastWornDate = timepiece.wearHistory.max()
+                            // Light haptic so the user feels the tap
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                        .padding(.top)
                     } else if selectedTab == "Wrist Checks" {
+
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Text("Wear History")
