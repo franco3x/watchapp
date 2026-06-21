@@ -7,12 +7,14 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct EditWatchView: View {
     @Bindable var timepiece: WatchTimepiece
     @Environment(\.dismiss) var dismiss
     
     @State private var priceInput: String = ""
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
     
     let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
     
@@ -20,6 +22,46 @@ struct EditWatchView: View {
     
     var body: some View {
         Form {
+            Section(header: Text("Timepiece Photo")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    if let data = timepiece.imageData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 200)
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .contentShape(Rectangle())
+                    } else {
+                        HStack(spacing: 12) {
+                            Spacer()
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 16))
+                                .foregroundColor(.amberGold)
+                            Text("Add Photo")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.amberGold)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
+                    }
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                    Task {
+                        if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                            if let uiImage = UIImage(data: data), let compressedData = uiImage.jpegData(compressionQuality: 0.8) {
+                                timepiece.imageData = compressedData
+                            }
+                        }
+                    }
+                }
+            }
             Section(header: Text("Core Identity")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.amberGold)
