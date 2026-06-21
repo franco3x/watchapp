@@ -29,39 +29,44 @@ struct WatchDetailView: View {
                         .frame(maxWidth: .infinity)
                         .clipped()
                 } else {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 0.15, green: 0.15, blue: 0.17),
-                                    Color(red: 0.09, green: 0.09, blue: 0.10)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
+                    ZStack {
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.16, green: 0.16, blue: 0.19),
+                                Color(red: 0.08, green: 0.08, blue: 0.09)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(height: 300)
-                        .overlay(
-                            VStack(spacing: 8) {
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.gray.opacity(0.5))
-                                Text("No Photo Uploaded")
-                                    .font(.caption)
-                                    .foregroundColor(.gray.opacity(0.8))
-                            }
-                        )
+                        
+                        Image(systemName: "clock")
+                            .font(.system(size: 60, weight: .light))
+                            .foregroundColor(.amberGold.opacity(0.18))
+                            .offset(y: -10)
+                        
+                        VStack {
+                            Spacer()
+                            Text("No Photo Uploaded")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.3))
+                                .tracking(1.0)
+                                .padding(.bottom, 16)
+                        }
+                    }
+                    .frame(height: 300)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
                 }
                 
                 VStack(alignment: .leading, spacing: 20) {
                     // Header Block
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(timepiece.manufacturer.uppercased())
+                        Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
                             .font(.system(size: 12, weight: .semibold, design: .monospaced))
                             .foregroundColor(.amberGold)
                             .tracking(1.5)
                         
-                        Text(timepiece.name)
+                        Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
                             .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -78,9 +83,9 @@ struct WatchDetailView: View {
                             .foregroundColor(.amberGold)
                         
                         VStack(spacing: 0) {
-                            SpecRow(label: "Manufacturer", value: timepiece.manufacturer)
+                            SpecRow(label: "Manufacturer", value: timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer)
                             Divider().background(Color.white.opacity(0.1))
-                            SpecRow(label: "Model Name", value: timepiece.modelName)
+                            SpecRow(label: "Model Name", value: timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
                             Divider().background(Color.white.opacity(0.1))

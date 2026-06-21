@@ -357,11 +357,12 @@ struct WatchScannerView: View {
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())
                         }
-                        .padding(.trailing, 20)
-                        .padding(.top, geo.safeAreaInsets.top > 0 ? geo.safeAreaInsets.top + 10 : 16)
                     }
                     Spacer()
                 }
+                .padding(.trailing, 20)
+                .padding(.top, 16)
+                .safeAreaPadding(.top)
             }
         }
         .ignoresSafeArea()
@@ -423,8 +424,23 @@ struct WatchScannerView: View {
     private var bottomControl: some View {
         switch scanPhase {
         case .ready:
-            ShutterButton(action: handleCapture)
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            VStack(spacing: 20) {
+                ShutterButton(action: handleCapture)
+                
+                Button(action: handleManualEntry) {
+                    Text("Manual Entry")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.75))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                }
+            }
+            .transition(.opacity.combined(with: .scale(scale: 0.9)))
         case .capturing, .recognizing:
             ProcessingPill(label: { if case .capturing = scanPhase { return "Capturing image…" } else { return "Identifying timepiece…" } }())
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -565,6 +581,23 @@ struct WatchScannerView: View {
         dismiss()
         // Notify the caller so it can navigate to WatchDetailView
         onWatchSaved?(newWatch)
+    }
+
+    private func handleManualEntry() {
+        let manualWatch = WatchTimepiece(
+            manufacturer: "",
+            name: "",
+            referenceNumber: "",
+            purchaseDate: Date(),
+            purchasePrice: 0.0,
+            imageData: nil
+        )
+        manualWatch.modelName = ""
+        context.insert(manualWatch)
+        try? context.save()
+        showingScanner = false
+        // Trigger progressive onboarding handoff
+        onWatchSaved?(manualWatch)
     }
 }
 

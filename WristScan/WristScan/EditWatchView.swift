@@ -20,6 +20,33 @@ struct EditWatchView: View {
     
     var body: some View {
         Form {
+            Section(header: Text("Core Identity")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                HStack {
+                    Text("Manufacturer")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("Unknown Manufacturer", text: $timepiece.manufacturer)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                        .textInputAutocapitalization(.words)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Model Name")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("New Watch", text: $timepiece.modelName)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                        .textInputAutocapitalization(.words)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+            }
+            
             Section(header: Text("Details")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.amberGold)
@@ -60,15 +87,6 @@ struct EditWatchView: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.amberGold)
             ) {
-                HStack {
-                    Text("Model Name")
-                        .foregroundColor(.white)
-                    Spacer()
-                    TextField("e.g. Alpinist", text: $timepiece.modelName)
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(.gray)
-                }
-                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
                 
                 HStack {
                     Text("Reference Number")
@@ -120,6 +138,7 @@ struct EditWatchView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
                     timepiece.purchasePrice = Double(priceInput) ?? 0.0
+                    timepiece.name = timepiece.modelName
                     dismiss()
                 }
                 .fontWeight(.bold)

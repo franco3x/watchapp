@@ -179,25 +179,33 @@ struct WatchCardView: View {
                     .frame(height: 120)
                     .clipped()
             } else {
-                Rectangle()
-                    .fill(Color(red: 0.15, green: 0.15, blue: 0.17))
-                    .frame(height: 120)
-                    .overlay(
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.gray.opacity(0.5))
+                ZStack {
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.16, green: 0.16, blue: 0.19),
+                            Color(red: 0.08, green: 0.08, blue: 0.09)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                    
+                    Image(systemName: "clock")
+                        .font(.system(size: 36, weight: .light))
+                        .foregroundColor(.amberGold.opacity(0.18))
+                }
+                .frame(height: 120)
+                .clipped()
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 // Manufacturer label (minimalist, small caps/uppercase)
-                Text(timepiece.manufacturer.uppercased())
+                Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
                     .tracking(1.5)
                 
                 // Watch Name
-                Text(timepiece.name)
+                Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
                     .lineLimit(1)
