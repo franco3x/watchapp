@@ -8,7 +8,7 @@ struct WristScanApp: App {
     init() {
         do {
             // Only initialize the container here. No async Tasks.
-            container = try ModelContainer(for: WatchCatalogItem.self, WatchTimepiece.self, WatchModification.self)
+            container = try ModelContainer(for: WatchCatalogItem.self, WatchTimepiece.self, WatchModification.self, AccuracyLog.self)
         } catch {
             fatalError("Failed to configure SwiftData Container: \(error.localizedDescription)")
         }

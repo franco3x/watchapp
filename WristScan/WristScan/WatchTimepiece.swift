@@ -17,6 +17,7 @@ final class WatchTimepiece {
     var purchasePrice: Double
     var timesWorn: Int
     @Relationship(deleteRule: .cascade, inverse: \WatchModification.timepiece) var modifications: [WatchModification]?
+    @Relationship(deleteRule: .cascade, inverse: \AccuracyLog.timepiece) var accuracyLogs: [AccuracyLog]?
     @Attribute(.externalStorage) var imageData: Data?
     
     var modelName: String = ""
@@ -62,7 +63,8 @@ final class WatchTimepiece {
         lugToLug: Double = 0.0,
         lugWidth: Double = 0.0,
         lastWornDate: Date? = nil,
-        wearHistory: [Date] = []
+        wearHistory: [Date] = [],
+        accuracyLogs: [AccuracyLog] = []
     ) {
         self.manufacturer = manufacturer
         self.name = name
@@ -90,6 +92,7 @@ final class WatchTimepiece {
         self.lugWidth = lugWidth
         self.lastWornDate = lastWornDate
         self.wearHistory = wearHistory
+        self.accuracyLogs = accuracyLogs
     }
 }
 
@@ -112,6 +115,33 @@ final class WatchModification {
         self.modificationDetails = modificationDetails
         self.dateApplied = dateApplied
         self.cost = cost
+        self.timepiece = timepiece
+    }
+}
+
+@Model
+final class AccuracyLog {
+    /// The exact date and time the accuracy check was performed.
+    var dateChecked: Date
+    /// Deviation from true time in seconds; positive = running fast, negative = running slow.
+    var deviationInSeconds: Double
+    /// Watch position during the check, e.g. 'Dial Up', 'Crown Down', 'On Wrist'.
+    var position: String
+    /// Free-form notes for the check (temperature, power reserve, etc.).
+    var notes: String
+    var timepiece: WatchTimepiece?
+    
+    init(
+        dateChecked: Date = Date(),
+        deviationInSeconds: Double = 0.0,
+        position: String = "",
+        notes: String = "",
+        timepiece: WatchTimepiece? = nil
+    ) {
+        self.dateChecked = dateChecked
+        self.deviationInSeconds = deviationInSeconds
+        self.position = position
+        self.notes = notes
         self.timepiece = timepiece
     }
 }

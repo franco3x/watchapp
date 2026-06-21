@@ -18,6 +18,7 @@ struct WatchDetailView: View {
     @State private var hasAutoPresented = false
     @State private var selectedTab: String = "Overview"
     @State private var showingManualWristCheck = false
+    @State private var showingAccuracyCheck = false
     
     var body: some View {
         ScrollView {
@@ -130,6 +131,7 @@ struct WatchDetailView: View {
                         Text("Stats").tag("Stats")
                         Text("Wrist Checks").tag("Wrist Checks")
                         Text("Service Log").tag("Service Log")
+                        Text("Accuracy").tag("Accuracy")
                     }
                     .pickerStyle(.segmented)
                     .padding(.vertical)
@@ -440,6 +442,96 @@ struct WatchDetailView: View {
                                 }
                             }
                         }
+                    } else if selectedTab == "Accuracy" {
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Header
+                            HStack {
+                                Text("Accuracy Ledger")
+                                    .font(.headline)
+                                    .foregroundColor(.amberGold)
+                                Spacer()
+                                Button {
+                                    showingAccuracyCheck = true
+                                } label: {
+                                    Image(systemName: "plus")
+                                        .font(.body.weight(.bold))
+                                        .foregroundColor(.amberGold)
+                                }
+                            }
+
+                            let logs = (timepiece.accuracyLogs ?? []).sorted { $0.dateChecked > $1.dateChecked }
+
+                            if logs.isEmpty {
+                                ContentUnavailableView(
+                                    "No Accuracy Logs",
+                                    systemImage: "stopwatch",
+                                    description: Text("Tap + to sync with the atomic clock and log your first accuracy reading.")
+                                )
+                                .padding(.vertical, 40)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                )
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(logs) { log in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack(alignment: .top) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    // Date + position
+                                                    Text(log.dateChecked.formatted(date: .abbreviated, time: .shortened))
+                                                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                                        .foregroundColor(.white)
+
+                                                    Text(log.position)
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
+                                                }
+
+                                                Spacer()
+
+                                                // Deviation badge
+                                                let isPositive = log.deviationInSeconds >= 0
+                                                let sign = isPositive ? "+" : ""
+                                                let deviationColor: Color = isPositive ? .green : .red
+
+                                                Text("\(sign)\(String(format: "%.1f", log.deviationInSeconds))s")
+                                                    .font(.system(size: 18, weight: .black, design: .monospaced))
+                                                    .foregroundColor(deviationColor)
+                                                    .monospacedDigit()
+                                                    .padding(.trailing, 8)
+
+                                                // Inline delete
+                                                Button {
+                                                    timepiece.accuracyLogs?.removeAll { $0.id == log.id }
+                                                } label: {
+                                                    Image(systemName: "trash")
+                                                        .foregroundColor(.red)
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+
+                                            if !log.notes.isEmpty {
+                                                Text(log.notes)
+                                                    .font(.caption)
+                                                    .foregroundColor(.gray.opacity(0.75))
+                                                    .italic()
+                                            }
+                                        }
+                                        .padding(14)
+                                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -474,6 +566,9 @@ struct WatchDetailView: View {
         .sheet(isPresented: $showingManualWristCheck) {
             ManualWristCheckView(timepiece: timepiece)
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showingAccuracyCheck) {
+            AccuracyCheckView(timepiece: timepiece)
         }
     }
 }
