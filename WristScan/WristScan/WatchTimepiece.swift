@@ -42,6 +42,7 @@ final class WatchTimepiece {
     var lugWidth: Double = 0.0     // in mm
     
     var lastWornDate: Date? = nil
+    var wearHistory: [Date] = []
     
     init(
         manufacturer: String,
@@ -60,7 +61,8 @@ final class WatchTimepiece {
         caseSize: Double = 0.0,
         lugToLug: Double = 0.0,
         lugWidth: Double = 0.0,
-        lastWornDate: Date? = nil
+        lastWornDate: Date? = nil,
+        wearHistory: [Date] = []
     ) {
         self.manufacturer = manufacturer
         self.name = name
@@ -87,6 +89,7 @@ final class WatchTimepiece {
         self.lugToLug = lugToLug
         self.lugWidth = lugWidth
         self.lastWornDate = lastWornDate
+        self.wearHistory = wearHistory
     }
 }
 
