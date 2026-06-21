@@ -14,6 +14,8 @@ enum DistributionMetric: String, CaseIterable {
     case brand = "Brand"
     case watchType = "Watch Type"
     case movementType = "Movement Type"
+    case dialColor = "Dial Color"
+    case caseMaterial = "Case Material"
 }
 
 struct AnalyticsDashboardView: View {
@@ -31,20 +33,18 @@ struct AnalyticsDashboardView: View {
 
     var dynamicDistribution: [(category: String, count: Int)] {
         let mappedValues: [String]
-
+        
         switch selectedDistribution {
-        case .brand:
-            mappedValues = timepieces.map { $0.manufacturer }
-        case .watchType:
-            mappedValues = timepieces.map { $0.watchType }
-        case .movementType:
-            mappedValues = timepieces.map { $0.movementType }
+        case .brand: mappedValues = timepieces.map { $0.manufacturer }
+        case .watchType: mappedValues = timepieces.map { $0.watchType }
+        case .movementType: mappedValues = timepieces.map { $0.movementType }
+        case .dialColor: mappedValues = timepieces.map { $0.dialColor }
+        case .caseMaterial: mappedValues = timepieces.map { $0.caseMaterial }
         }
-
+        
         let filtered = mappedValues.filter { !$0.isEmpty }
         let counts = filtered.reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
-        return counts.map { (category: $0.key, count: $0.value) }
-                     .sorted { $0.count > $1.count }
+        return counts.map { (category: $0.key, count: $0.value) }.sorted { $0.count > $1.count }
     }
 
     var mostWorn: [WatchTimepiece] {
@@ -152,12 +152,36 @@ struct AnalyticsDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Collection Distribution")
 
-            Picker("Distribution Metric", selection: $selectedDistribution) {
+            Menu {
                 ForEach(DistributionMetric.allCases, id: \.self) { metric in
-                    Text(metric.rawValue).tag(metric)
+                    Button(action: { selectedDistribution = metric }) {
+                        HStack {
+                            Text(metric.rawValue)
+                            if selectedDistribution == metric {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
                 }
+            } label: {
+                HStack {
+                    Text("By \(selectedDistribution.rawValue)")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.amberGold)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
             }
-            .pickerStyle(.segmented)
             .padding(.bottom, 8)
 
             if dynamicDistribution.isEmpty {
