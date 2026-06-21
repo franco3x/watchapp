@@ -4,36 +4,43 @@
     "modelName": "Seiko 5 Sports GMT",
     "referenceNumber": "SSK001",
     "aliases": ["Seiko GMT", "5 Sports"],
-    "primaryStyle": "Sport",
+    "watchType": "GMT",
     "dialColor": "Black",
-    "priceTier": "Budget"
+    "priceTier": "Budget",
+    "movementType": "Automatic",
+    "movement": "4R34"
   },
   {
     "manufacturer": "Orient",
     "modelName": "Mako II",
     "referenceNumber": "FAA02002D9",
     "aliases": ["Orient Mako", "Mako 2"],
-    "primaryStyle": "Diver",
+    "watchType": "Diver",
     "dialColor": "Blue",
-    "priceTier": "Budget"
+    "priceTier": "Budget",
+    "movementType": "Automatic",
+    "movement": "F6922"
   },
   {
     "manufacturer": "Rolex",
     "modelName": "GMT-Master II",
     "referenceNumber": "126710BLRO",
     "aliases": ["Pepsi", "GMT Master", "Rolex GMT"],
-    "primaryStyle": "Sport",
+    "watchType": "GMT",
     "dialColor": "Black",
-    "priceTier": "Luxury"
+    "priceTier": "Luxury",
+    "movementType": "Automatic",
+    "movement": "3285"
   },
   {
     "manufacturer": "Seiko",
     "modelName": "Seiko 5 Sports GMT Blueberry",
     "referenceNumber": "SSK003",
     "aliases": ["Seiko GMT", "5 Sports", "Blueberry"],
-    "primaryStyle": "Sport",
+    "watchType": "GMT",
     "dialColor": "Blue",
-    "priceTier": "Budget"
+    "priceTier": "Budget",
+    "movementType": "Automatic",
+    "movement": "4R34"
   }
 ]
-

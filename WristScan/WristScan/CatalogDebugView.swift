@@ -109,9 +109,9 @@ private struct CatalogRowView: View {
                 .background(Color.white.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
-            // Style chips: primaryStyle · dialColor · priceTier
+            // Style chips: watchType · dialColor · priceTier
             HStack(spacing: 6) {
-                StyleChip(label: item.primaryStyle, color: .blue)
+                StyleChip(label: item.watchType, color: .blue)
                 StyleChip(label: item.dialColor,    color: .purple)
                 StyleChip(label: item.priceTier,    color: tierColor(item.priceTier))
             }

@@ -17,9 +17,11 @@ private struct WatchCatalogItemDTO: Decodable {
     let modelName:       String
     let referenceNumber: String
     let aliases:         [String]
-    let primaryStyle:    String
+    let watchType:       String
     let dialColor:       String
     let priceTier:       String
+    let movementType:    String
+    let movement:        String
 }
 
 // MARK: - HydrationManager
@@ -55,9 +57,11 @@ enum HydrationManager {
                 modelName:       dto.modelName,
                 referenceNumber: dto.referenceNumber,
                 aliases:         dto.aliases,
-                primaryStyle:    dto.primaryStyle,
+                watchType:       dto.watchType,
                 dialColor:       dto.dialColor,
-                priceTier:       dto.priceTier
+                priceTier:       dto.priceTier,
+                movementType:    dto.movementType,
+                movement:        dto.movement
             )
             context.insert(item)
         }

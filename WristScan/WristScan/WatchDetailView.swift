@@ -10,8 +10,12 @@ import SwiftData
 
 struct WatchDetailView: View {
     @Bindable var timepiece: WatchTimepiece
+    var autoPresentEdit: Bool = false
+
     @State private var showingAddModification = false
     @State private var showingEditSheet = false
+    /// One-shot guard: ensures autoPresentEdit only fires once per view lifetime.
+    @State private var hasAutoPresented = false
     
     var body: some View {
         ScrollView {
@@ -197,6 +201,12 @@ struct WatchDetailView: View {
             .padding(.bottom, 30)
         }
         .background(Color(red: 0.07, green: 0.07, blue: 0.08))
+        .onAppear {
+            if autoPresentEdit && !hasAutoPresented {
+                hasAutoPresented = true
+                showingEditSheet = true
+            }
+        }
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

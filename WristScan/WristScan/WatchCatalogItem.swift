@@ -30,10 +30,12 @@ final class WatchCatalogItem {
     // MARK: - Classification
 
     /// Broad style category, e.g. "Diver", "Pilot", "Dress", "Sport".
-    var primaryStyle: String
+    var watchType: String
     var dialColor: String
     /// Price tier bucket: "Budget", "Mid-Range", "Luxury", "Ultra-Luxury".
     var priceTier: String
+    var movementType: String
+    var movement: String
 
     // MARK: - Init
 
@@ -43,17 +45,21 @@ final class WatchCatalogItem {
         modelName: String,
         referenceNumber: String,
         aliases: [String] = [],
-        primaryStyle: String,
+        watchType: String,
         dialColor: String,
-        priceTier: String
+        priceTier: String,
+        movementType: String,
+        movement: String
     ) {
         self.id              = id
         self.manufacturer    = manufacturer
         self.modelName       = modelName
         self.referenceNumber = referenceNumber
         self.aliases         = aliases
-        self.primaryStyle    = primaryStyle
+        self.watchType       = watchType
         self.dialColor       = dialColor
         self.priceTier       = priceTier
+        self.movementType    = movementType
+        self.movement        = movement
     }
 }

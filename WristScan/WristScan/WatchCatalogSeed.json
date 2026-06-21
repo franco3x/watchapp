@@ -5,10 +5,12 @@
     "modelName": "Seiko 5 Sports GMT",
     "referenceNumber": "SSK001",
     "countryOfOrigin": "Japan",
-    "primaryStyle": "Sport",
+    "watchType": "GMT",
     "dialColor": "Black",
     "priceTier": "Budget",
-    "imageIdentifier": "seiko_5_sports_gmt_ssk001"
+    "imageIdentifier": "seiko_5_sports_gmt_ssk001",
+    "movementType": "Automatic",
+    "movement": "4R34"
   },
   {
     "id": "B2C3D4E5-F6A7-8901-BCDE-F12345678901",
@@ -16,10 +18,12 @@
     "modelName": "Mako II",
     "referenceNumber": "FAA02002D9",
     "countryOfOrigin": "Japan",
-    "primaryStyle": "Diver",
+    "watchType": "Diver",
     "dialColor": "Blue",
     "priceTier": "Budget",
-    "imageIdentifier": "orient_mako_ii_faa02002d9"
+    "imageIdentifier": "orient_mako_ii_faa02002d9",
+    "movementType": "Automatic",
+    "movement": "F6922"
   },
   {
     "id": "C3D4E5F6-A7B8-9012-CDEF-123456789012",
@@ -27,9 +31,11 @@
     "modelName": "GMT-Master II",
     "referenceNumber": "126710BLRO",
     "countryOfOrigin": "Switzerland",
-    "primaryStyle": "Sport",
+    "watchType": "GMT",
     "dialColor": "Black",
     "priceTier": "Luxury",
-    "imageIdentifier": "rolex_gmt_master_ii_126710blro"
+    "imageIdentifier": "rolex_gmt_master_ii_126710blro",
+    "movementType": "Automatic",
+    "movement": "3285"
   }
 ]

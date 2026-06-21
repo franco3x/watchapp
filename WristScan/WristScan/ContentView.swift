@@ -23,6 +23,8 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var selectedSort: SortOption = .dateAdded
     @State private var sortAscending: Bool = false
+    /// Set after a successful scan; drives .navigationDestination to push WatchDetailView.
+    @State private var newlyAddedWatch: WatchTimepiece? = nil
 
     var sortedTimepieces: [WatchTimepiece] {
         switch selectedSort {
@@ -145,9 +147,18 @@ struct ContentView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarBackground(Color(red: 0.07, green: 0.07, blue: 0.08), for: .navigationBar)
+            // Programmatic push after a successful scan
+            .navigationDestination(item: $newlyAddedWatch) { watch in
+                WatchDetailView(timepiece: watch, autoPresentEdit: true)
+            }
         }
         .fullScreenCover(isPresented: $showingScanner) {
-            WatchScannerView(showingScanner: $showingScanner)
+            WatchScannerView(showingScanner: $showingScanner) { savedWatch in
+                // Delay slightly so the fullScreenCover can fully dismiss before we push.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    newlyAddedWatch = savedWatch
+                }
+            }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()

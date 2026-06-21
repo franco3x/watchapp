@@ -290,6 +290,10 @@ struct WatchScannerView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var showingScanner: Bool
 
+    /// Called on the main thread after a new WatchTimepiece has been saved to the store.
+    /// The caller (ContentView) uses this to trigger programmatic navigation to WatchDetailView.
+    var onWatchSaved: ((WatchTimepiece) -> Void)? = nil
+
     /// Live catalog — passed to the scoring engine on every scan.
     @Query(sort: \WatchCatalogItem.manufacturer) private var catalog: [WatchCatalogItem]
 
@@ -484,6 +488,8 @@ struct WatchScannerView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             context.insert(timepiece)
             showingScanner = false
+            // Notify the caller so it can navigate to WatchDetailView
+            onWatchSaved?(timepiece)
         }
     }
 
@@ -557,6 +563,8 @@ struct WatchScannerView: View {
         print("[Database] Manually added \(newWatch.name) to collection.")
         showingManualSearch = false
         dismiss()
+        // Notify the caller so it can navigate to WatchDetailView
+        onWatchSaved?(newWatch)
     }
 }
 
