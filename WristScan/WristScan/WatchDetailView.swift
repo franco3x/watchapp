@@ -127,6 +127,7 @@ struct WatchDetailView: View {
                     
                     Picker("View Selection", selection: $selectedTab) {
                         Text("Overview").tag("Overview")
+                        Text("Stats").tag("Stats")
                         Text("Wrist Checks").tag("Wrist Checks")
                     }
                     .pickerStyle(.segmented)
@@ -325,6 +326,9 @@ struct WatchDetailView: View {
                                         .stroke(Color.white.opacity(0.06), lineWidth: 1)
                                 )
                         }
+                    } else if selectedTab == "Stats" {
+                        WristCheckCalendarView(wearHistory: timepiece.wearHistory)
+                            .padding(.top)
                     } else if selectedTab == "Wrist Checks" {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
