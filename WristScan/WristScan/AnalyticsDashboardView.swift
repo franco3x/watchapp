@@ -10,8 +10,18 @@ import SwiftUI
 import SwiftData
 import Charts
 
+enum DistributionMetric: String, CaseIterable {
+    case brand = "Brand"
+    case watchType = "Watch Type"
+    case movementType = "Movement Type"
+}
+
 struct AnalyticsDashboardView: View {
     @Query private var timepieces: [WatchTimepiece]
+
+    // MARK: - State
+
+    @State private var selectedDistribution: DistributionMetric = .brand
 
     // MARK: - Computed Metrics
 
@@ -19,11 +29,22 @@ struct AnalyticsDashboardView: View {
         timepieces.reduce(0) { $0 + $1.purchasePrice }
     }
 
-    var brandDistribution: [(brand: String, count: Int)] {
-        let grouped = Dictionary(grouping: timepieces.filter { !$0.manufacturer.isEmpty }, by: \.manufacturer)
-        return grouped
-            .map { (brand: $0.key, count: $0.value.count) }
-            .sorted { $0.count > $1.count }
+    var dynamicDistribution: [(category: String, count: Int)] {
+        let mappedValues: [String]
+
+        switch selectedDistribution {
+        case .brand:
+            mappedValues = timepieces.map { $0.manufacturer }
+        case .watchType:
+            mappedValues = timepieces.map { $0.watchType }
+        case .movementType:
+            mappedValues = timepieces.map { $0.movementType }
+        }
+
+        let filtered = mappedValues.filter { !$0.isEmpty }
+        let counts = filtered.reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.map { (category: $0.key, count: $0.value) }
+                     .sorted { $0.count > $1.count }
     }
 
     var mostWorn: [WatchTimepiece] {
@@ -57,7 +78,7 @@ struct AnalyticsDashboardView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
                             summaryCards
-                            brandChart
+                            distributionChart
                             wearChart
                         }
                         .padding(16)
@@ -127,34 +148,43 @@ struct AnalyticsDashboardView: View {
         }
     }
 
-    private var brandChart: some View {
+    private var distributionChart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Collection by Brand")
+            sectionHeader("Collection Distribution")
 
-            if brandDistribution.isEmpty {
-                missingDataLabel("No manufacturer data available.")
+            Picker("Distribution Metric", selection: $selectedDistribution) {
+                ForEach(DistributionMetric.allCases, id: \.self) { metric in
+                    Text(metric.rawValue).tag(metric)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.bottom, 8)
+
+            if dynamicDistribution.isEmpty {
+                missingDataLabel("No data available for this metric.")
             } else {
-                Chart(brandDistribution, id: \.brand) { item in
+                Chart(dynamicDistribution, id: \.category) { item in
                     SectorMark(
                         angle: .value("Count", item.count),
                         innerRadius: .ratio(0.55),
                         angularInset: 2
                     )
-                    .foregroundStyle(by: .value("Brand", item.brand))
+                    .foregroundStyle(by: .value("Category", item.category))
                     .cornerRadius(4)
                 }
                 .frame(height: 250)
                 .chartLegend(position: .bottom, alignment: .center, spacing: 12)
                 .chartForegroundStyleScale(
-                    domain: brandDistribution.map(\.brand),
-                    range: Array(sectorColors.prefix(brandDistribution.count))
+                    domain: dynamicDistribution.map(\.category),
+                    range: Array(sectorColors.prefix(dynamicDistribution.count))
                 )
+                .animation(.easeInOut, value: selectedDistribution)
 
-                // Brand breakdown list
+                // Breakdown list
                 VStack(spacing: 8) {
-                    ForEach(brandDistribution.prefix(6), id: \.brand) { item in
+                    ForEach(dynamicDistribution.prefix(6), id: \.category) { item in
                         HStack {
-                            Text(item.brand.uppercased())
+                            Text(item.category.uppercased())
                                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
                                 .foregroundColor(.white.opacity(0.8))
                                 .tracking(1.0)
@@ -163,7 +193,7 @@ struct AnalyticsDashboardView: View {
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.gray)
                         }
-                        if item.brand != brandDistribution.prefix(6).last?.brand {
+                        if item.category != dynamicDistribution.prefix(6).last?.category {
                             Divider().background(Color.white.opacity(0.08))
                         }
                     }
