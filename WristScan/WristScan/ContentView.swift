@@ -223,6 +223,12 @@ struct WatchCardView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
                     )
+                    .padding(8)
+                    .highPriorityGesture(
+                        TapGesture().onEnded {
+                            timepiece.timesWorn += 1
+                        }
+                    )
                 }
             }
             .padding(14)
@@ -248,11 +254,6 @@ struct WatchCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
         .contentShape(Rectangle()) // Ensures the whole tile is tappable
-        .highPriorityGesture(
-            TapGesture(count: 2).onEnded {
-                timepiece.timesWorn += 1
-            }
-        )
         .sensoryFeedback(.impact(weight: .light), trigger: timepiece.timesWorn)
     }
 }
