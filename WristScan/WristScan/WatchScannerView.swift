@@ -16,16 +16,20 @@ import Vision
 final class CameraPreviewLayer: NSObject {
     let session = AVCaptureSession()
     private(set) var photoOutput = AVCapturePhotoOutput()
+    private var isConfigured = false
 
     // Callback invoked on the main thread with raw OCR lines and image data after capture
     var onCapture: (([String], Data?) -> Void)?
 
     override init() {
         super.init()
-        setupSession()
+        // Deliberately empty to prevent Main Thread blocking during struct initialization
     }
 
     private func setupSession() {
+        guard !isConfigured else { return }
+        
+        session.beginConfiguration()
         session.sessionPreset = .photo
 
         // Prefer triple-camera → dual-camera → wide-angle for best macro capability
@@ -34,15 +38,20 @@ final class CameraPreviewLayer: NSObject {
             .builtInDualCamera,
             .builtInWideAngleCamera
         ]
+        
         let discovery = AVCaptureDevice.DiscoverySession(
             deviceTypes: deviceTypes,
             mediaType: .video,
             position: .back
         )
+        
         guard
             let device = discovery.devices.first,
             let input = try? AVCaptureDeviceInput(device: device)
-        else { return }
+        else {
+            session.commitConfiguration()
+            return
+        }
 
         // Configure continuous autofocus for close-up watch dial scanning
         if device.isFocusModeSupported(.continuousAutoFocus) {
@@ -56,12 +65,19 @@ final class CameraPreviewLayer: NSObject {
 
         if session.canAddInput(input) { session.addInput(input) }
         if session.canAddOutput(photoOutput) { session.addOutput(photoOutput) }
+        
+        session.commitConfiguration()
+        isConfigured = true
     }
 
     func start() {
-        guard !session.isRunning else { return }
+        // Shift heavy hardware configuration and session starting entirely off the main thread
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.session.startRunning()
+            guard let self else { return }
+            self.setupSession()
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
         }
     }
 
