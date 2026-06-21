@@ -12,12 +12,17 @@ import SwiftData
 final class WatchTimepiece {
     var manufacturer: String
     var name: String
-    var referenceNumber: String
+    var referenceNumber: String = ""
     var purchaseDate: Date
     var purchasePrice: Double
     var timesWorn: Int
     @Relationship(deleteRule: .cascade, inverse: \WatchModification.timepiece) var modifications: [WatchModification]?
     @Attribute(.externalStorage) var imageData: Data?
+    
+    var modelName: String = ""
+    var movementType: String = ""
+    var movement: String = ""
+    var notes: String = ""
     
     init(
         manufacturer: String,
@@ -35,6 +40,10 @@ final class WatchTimepiece {
         self.timesWorn = 0
         self.modifications = []
         self.imageData = imageData
+        self.modelName = ""
+        self.movementType = ""
+        self.movement = ""
+        self.notes = ""
     }
 }
 

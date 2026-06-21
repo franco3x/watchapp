@@ -67,23 +67,55 @@ struct WatchDetailView: View {
                             .foregroundColor(.gray)
                     }
                     
-                    // Metrics Row
-                    HStack(spacing: 12) {
-                        MetricCard(
-                            label: "PRICE",
-                            value: timepiece.purchasePrice.formatted(.currency(code: "USD"))
-                        )
-                        MetricCard(
-                            label: "PURCHASED",
-                            value: timepiece.purchaseDate.formatted(date: .abbreviated, time: .omitted)
-                        )
-                        MetricCard(
-                            label: "TIMES WORN",
-                            value: "\(timepiece.timesWorn)"
+                    // Section 1: Specifications
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Specifications")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        VStack(spacing: 0) {
+                            SpecRow(label: "Manufacturer", value: timepiece.manufacturer)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Model Name", value: timepiece.modelName)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Movement Type", value: timepiece.movementType)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Caliber", value: timepiece.movement)
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
                         )
                     }
                     
-                    // Modification History Section
+                    // Section 2: Acquisition
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Acquisition")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        VStack(spacing: 0) {
+                            SpecRow(label: "Purchase Date", value: timepiece.purchaseDate.formatted(date: .abbreviated, time: .omitted))
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Purchase Price", value: timepiece.purchasePrice.formatted(.currency(code: "USD")))
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Times Worn", value: "\(timepiece.timesWorn) \(timepiece.timesWorn == 1 ? "wear" : "wears")")
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Section 3: Modifications
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Modification History")
                             .font(.headline)
@@ -136,6 +168,26 @@ struct WatchDetailView: View {
                                 }
                             }
                         }
+                    }
+                    
+                    // Inline Notes Scratchpad
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Notes")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        TextEditor(text: $timepiece.notes)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .frame(minHeight: 150)
+                            .padding(8)
+                            .scrollContentBackground(.hidden)
+                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
                     }
                 }
                 .padding(.horizontal, 16)
@@ -199,6 +251,25 @@ struct MetricCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
+    }
+}
+
+struct SpecRow: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            Spacer()
+            Text(value.isEmpty ? "—" : value)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+        }
+        .padding(.vertical, 8)
     }
 }
 

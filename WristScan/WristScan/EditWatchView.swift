@@ -14,6 +14,8 @@ struct EditWatchView: View {
     
     @State private var priceInput: String = ""
     
+    let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
+    
     var body: some View {
         Form {
             Section(header: Text("Details")
@@ -48,6 +50,50 @@ struct EditWatchView: View {
                             .foregroundColor(.gray)
                             .padding(.trailing, 8)
                     }
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+            }
+            
+            Section(header: Text("Specifications")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                HStack {
+                    Text("Model Name")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. Alpinist", text: $timepiece.modelName)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Reference Number")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. SPB121", text: $timepiece.referenceNumber)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                Picker("Movement Type", selection: $timepiece.movementType) {
+                    Text("Select").tag("") 
+                    ForEach(movementOptions, id: \.self) { option in
+                        Text(option).tag(option)
+                    }
+                }
+                .foregroundColor(.white)
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Caliber")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. 6R35", text: $timepiece.movement)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
                 }
                 .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
             }
