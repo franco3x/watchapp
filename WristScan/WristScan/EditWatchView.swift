@@ -15,10 +15,17 @@ struct EditWatchView: View {
     
     @State private var priceInput: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var caseSizeInput: String = ""
+    @State private var lugToLugInput: String = ""
+    @State private var lugWidthInput: String = ""
     
     let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
     
     let watchTypeOptions = ["Pilot", "Chronograph", "Diver", "Dress", "Everyday", "Field", "GMT", "Sports", "Digital", "Calendar"]
+    
+    let caseMaterials = ["Stainless Steel", "Titanium", "Bronze", "Two-Tone", "Yellow Gold", "Rose Gold", "Ceramic", "Resin/Plastic"]
+    
+    let crystalTypes = ["Sapphire", "Mineral", "Acrylic / Hesalite"]
     
     var body: some View {
         Form {
@@ -168,11 +175,130 @@ struct EditWatchView: View {
                 }
                 .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
             }
+            
+            Section(header: Text("Case & Dial Architecture")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                Picker("Case Material", selection: $timepiece.caseMaterial) {
+                    Text("Select").tag("")
+                    ForEach(caseMaterials, id: \.self) { option in
+                        Text(option).tag(option)
+                    }
+                }
+                .foregroundColor(.white)
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                Picker("Crystal Type", selection: $timepiece.crystalType) {
+                    Text("Select").tag("")
+                    ForEach(crystalTypes, id: \.self) { option in
+                        Text(option).tag(option)
+                    }
+                }
+                .foregroundColor(.white)
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Dial Color")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. Black, Blue", text: $timepiece.dialColor)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Lume Type")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. Super-LumiNova", text: $timepiece.lumeType)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+            }
+            
+            Section(header: Text("Dimensions (mm)")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                HStack {
+                    Text("Case Size")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. 40.0", text: $caseSizeInput)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Lug to Lug")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. 47.0", text: $lugToLugInput)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Lug Width")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. 20.0", text: $lugWidthInput)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+            }
+            
+            Section(header: Text("Band & Capabilities")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.amberGold)
+            ) {
+                HStack {
+                    Text("Strap/Bracelet Material")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. Oyster, Leather", text: $timepiece.strapMaterial)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Water Resistance")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. 200m", text: $timepiece.waterResistance)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+                
+                HStack {
+                    Text("Complications")
+                        .foregroundColor(.white)
+                    Spacer()
+                    TextField("e.g. Day-Date, GMT", text: $timepiece.complications)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.gray)
+                }
+                .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
+            }
         }
         .scrollContentBackground(.hidden)
         .background(Color(red: 0.07, green: 0.07, blue: 0.08))
         .onAppear {
             priceInput = timepiece.purchasePrice == 0.0 ? "" : String(format: "%.2f", timepiece.purchasePrice)
+            caseSizeInput = timepiece.caseSize == 0.0 ? "" : String(format: "%.1f", timepiece.caseSize)
+            lugToLugInput = timepiece.lugToLug == 0.0 ? "" : String(format: "%.1f", timepiece.lugToLug)
+            lugWidthInput = timepiece.lugWidth == 0.0 ? "" : String(format: "%.1f", timepiece.lugWidth)
         }
         .navigationTitle("Edit Watch")
         .navigationBarTitleDisplayMode(.inline)
@@ -180,6 +306,9 @@ struct EditWatchView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
                     timepiece.purchasePrice = Double(priceInput) ?? 0.0
+                    timepiece.caseSize = Double(caseSizeInput) ?? 0.0
+                    timepiece.lugToLug = Double(lugToLugInput) ?? 0.0
+                    timepiece.lugWidth = Double(lugWidthInput) ?? 0.0
                     timepiece.name = timepiece.modelName
                     dismiss()
                 }

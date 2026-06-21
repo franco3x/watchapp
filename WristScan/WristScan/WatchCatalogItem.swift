@@ -37,6 +37,21 @@ final class WatchCatalogItem {
     var movementType: String
     var movement: String
 
+    // Dial & Visuals
+    var lumeType: String = ""
+
+    // Case & Material Specs
+    var caseMaterial: String = ""
+    var crystalType: String = ""
+    var waterResistance: String = ""
+    var strapMaterial: String = ""
+    var complications: String = "" // e.g., "Date, Chronograph"
+
+    // Dimensions (Using Double for future numeric filtering/sorting)
+    var caseSize: Double = 0.0     // in mm
+    var lugToLug: Double = 0.0     // in mm
+    var lugWidth: Double = 0.0     // in mm
+
     // MARK: - Init
 
     init(
@@ -49,7 +64,16 @@ final class WatchCatalogItem {
         dialColor: String,
         priceTier: String,
         movementType: String,
-        movement: String
+        movement: String,
+        lumeType: String = "",
+        caseMaterial: String = "",
+        crystalType: String = "",
+        waterResistance: String = "",
+        strapMaterial: String = "",
+        complications: String = "",
+        caseSize: Double = 0.0,
+        lugToLug: Double = 0.0,
+        lugWidth: Double = 0.0
     ) {
         self.id              = id
         self.manufacturer    = manufacturer
@@ -61,5 +85,15 @@ final class WatchCatalogItem {
         self.priceTier       = priceTier
         self.movementType    = movementType
         self.movement        = movement
+        
+        self.lumeType        = lumeType
+        self.caseMaterial    = caseMaterial
+        self.crystalType     = crystalType
+        self.waterResistance = waterResistance
+        self.strapMaterial   = strapMaterial
+        self.complications   = complications
+        self.caseSize        = caseSize
+        self.lugToLug        = lugToLug
+        self.lugWidth        = lugWidth
     }
 }

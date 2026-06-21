@@ -76,9 +76,9 @@ struct WatchDetailView: View {
                             .foregroundColor(.gray)
                     }
                     
-                    // Section 1: Specifications
+                    // Section 1: Specifications (Core Identity)
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Specifications")
+                        Text("Core Identity")
                             .font(.headline)
                             .foregroundColor(.amberGold)
                         
@@ -90,10 +90,78 @@ struct WatchDetailView: View {
                             SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Watch Type", value: timepiece.watchType)
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Section 1b: Case & Dimensions
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Case & Dimensions")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        VStack(spacing: 0) {
+                            SpecRow(label: "Case Material", value: timepiece.caseMaterial)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Case Size", value: timepiece.caseSize > 0 ? "\(timepiece.caseSize.formatted()) mm" : "—")
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Lug to Lug", value: timepiece.lugToLug > 0 ? "\(timepiece.lugToLug.formatted()) mm" : "—")
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Lug Width", value: timepiece.lugWidth > 0 ? "\(timepiece.lugWidth.formatted()) mm" : "—")
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Water Resistance", value: timepiece.waterResistance)
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Section 1c: Dial & Movement
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Dial & Movement")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        VStack(spacing: 0) {
+                            SpecRow(label: "Dial Color", value: timepiece.dialColor)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Lume Type", value: timepiece.lumeType)
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Movement Type", value: timepiece.movementType)
                             Divider().background(Color.white.opacity(0.1))
                             SpecRow(label: "Caliber", value: timepiece.movement)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Complications", value: timepiece.complications)
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Section 1d: Band & Integrity
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Band & Integrity")
+                            .font(.headline)
+                            .foregroundColor(.amberGold)
+                        
+                        VStack(spacing: 0) {
+                            SpecRow(label: "Strap/Bracelet", value: timepiece.strapMaterial)
+                            Divider().background(Color.white.opacity(0.1))
+                            SpecRow(label: "Crystal Type", value: timepiece.crystalType)
                         }
                         .padding(14)
                         .background(Color(red: 0.12, green: 0.12, blue: 0.14))

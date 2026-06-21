@@ -25,13 +25,39 @@ final class WatchTimepiece {
     var notes: String = ""
     var watchType: String = ""
     
+    // Dial & Visuals
+    var dialColor: String = ""
+    var lumeType: String = ""
+
+    // Case & Material Specs
+    var caseMaterial: String = ""
+    var crystalType: String = ""
+    var waterResistance: String = ""
+    var strapMaterial: String = ""
+    var complications: String = "" // e.g., "Date, Chronograph"
+
+    // Dimensions (Using Double for future numeric filtering/sorting)
+    var caseSize: Double = 0.0     // in mm
+    var lugToLug: Double = 0.0     // in mm
+    var lugWidth: Double = 0.0     // in mm
+    
     init(
         manufacturer: String,
         name: String,
         referenceNumber: String,
         purchaseDate: Date,
         purchasePrice: Double,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        dialColor: String = "",
+        lumeType: String = "",
+        caseMaterial: String = "",
+        crystalType: String = "",
+        waterResistance: String = "",
+        strapMaterial: String = "",
+        complications: String = "",
+        caseSize: Double = 0.0,
+        lugToLug: Double = 0.0,
+        lugWidth: Double = 0.0
     ) {
         self.manufacturer = manufacturer
         self.name = name
@@ -46,6 +72,17 @@ final class WatchTimepiece {
         self.movement = ""
         self.notes = ""
         self.watchType = ""
+        
+        self.dialColor = dialColor
+        self.lumeType = lumeType
+        self.caseMaterial = caseMaterial
+        self.crystalType = crystalType
+        self.waterResistance = waterResistance
+        self.strapMaterial = strapMaterial
+        self.complications = complications
+        self.caseSize = caseSize
+        self.lugToLug = lugToLug
+        self.lugWidth = lugWidth
     }
 }
 
