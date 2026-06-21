@@ -13,6 +13,7 @@ struct ContentView: View {
     @Query(sort: \WatchTimepiece.purchaseDate, order: .reverse) private var timepieces: [WatchTimepiece]
 
     @State private var showingScanner = false
+    @State private var showingSettings = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -65,13 +66,24 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showingScanner = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.amberGold)
-                            .padding(8)
-                            .background(Color.amberGold.opacity(0.1))
-                            .clipShape(Circle())
+                    HStack(spacing: 12) {
+                        Button(action: { showingSettings = true }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.amberGold)
+                                .padding(8)
+                                .background(Color.amberGold.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                        
+                        Button(action: { showingScanner = true }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.amberGold)
+                                .padding(8)
+                                .background(Color.amberGold.opacity(0.1))
+                                .clipShape(Circle())
+                        }
                     }
                 }
             }
@@ -81,6 +93,9 @@ struct ContentView: View {
         }
         .fullScreenCover(isPresented: $showingScanner) {
             WatchScannerView(showingScanner: $showingScanner)
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
     }
 

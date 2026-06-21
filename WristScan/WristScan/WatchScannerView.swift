@@ -164,10 +164,17 @@ struct ParsedWatchDetails {
 
 enum WatchTextParser {
 
+    struct CatalogSnapshot: Sendable {
+        let manufacturer: String
+        let modelName: String
+        let referenceNumber: String
+        let aliases: [String]
+    }
+
     // MARK: - Sanitization
 
     /// Corrects known OCR hallucinations before any parsing occurs.
-    private static func sanitize(_ lines: [String]) -> [String] {
+    nonisolated private static func sanitize(_ lines: [String]) -> [String] {
         lines.map {
             $0.replacingOccurrences(of: "GOURMET", with: "GMT", options: .caseInsensitive)
         }
@@ -229,7 +236,7 @@ enum WatchTextParser {
     ///   +2  alias match          (distance ≤ 1)
     ///   +5  reference number     (distance ≤ 1  — high precision required)
     nonisolated private static func score(
-        watch: WatchCatalogItem,
+        watch: CatalogSnapshot,
         lines: [String]
     ) -> Int {
         var total = 0
@@ -257,8 +264,8 @@ enum WatchTextParser {
     /// inheriting any actor context.
     nonisolated static func parse(
         lines: [String],
-        catalog: [WatchCatalogItem]
-    ) async -> [WatchCatalogItem] {
+        catalog: [CatalogSnapshot]
+    ) async -> [CatalogSnapshot] {
         await Task.detached(priority: .userInitiated) {
             let clean = sanitize(lines)
 
@@ -494,16 +501,21 @@ struct WatchScannerView: View {
             return
         }
 
-        // Capture catalog as a plain array — value type, safe to send across concurrency domains.
-        let catalogSnapshot = catalog
+        // Map live @Model objects to Sendable snapshots before passing across actor boundaries
+        let catalogSnapshots = catalog.map { WatchTextParser.CatalogSnapshot(manufacturer: $0.manufacturer, modelName: $0.modelName, referenceNumber: $0.referenceNumber, aliases: $0.aliases) }
         capturedImageData = imageData
 
         Task {
             // Await the new async parse function which runs its calculations inside a background Task.detached.
-            let matches = await WatchTextParser.parse(lines: lines, catalog: catalogSnapshot)
+            let snapshotMatches = await WatchTextParser.parse(lines: lines, catalog: catalogSnapshots)
 
             // Brief pause so the "Reading dial text…" label is visible to the user.
             try? await Task.sleep(nanoseconds: 600_000_000)   // 0.6 s
+
+            // Map back to live MainActor @Model instances for UI presentation and saving
+            let matches = snapshotMatches.compactMap { snapshot in
+                catalog.first(where: { $0.referenceNumber == snapshot.referenceNumber })
+            }
 
             if matches.isEmpty {
                 withAnimation {
