@@ -40,6 +40,9 @@ struct AnalyticsDashboardView: View {
         timepieces.reduce(0) { $0 + $1.purchasePrice }
     }
 
+    var totalWristChecks: Int {
+        timepieces.reduce(0) { $0 + $1.timesWorn }
+    }
     var dynamicDistribution: [(category: String, count: Int)] {
         let mappedValues: [String]
         
@@ -171,34 +174,53 @@ struct AnalyticsDashboardView: View {
         HStack(spacing: 12) {
             // Total Collection Value
             VStack(alignment: .leading, spacing: 6) {
-                Text("Collection Value")
+                Text("Value")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
                     .tracking(1.0)
                     .textCase(.uppercase)
                 Text(totalValue, format: .currency(code: "USD").precision(.fractionLength(0)))
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 20, weight: .bold)) // Slightly scaled down to fit 3 cols
                     .foregroundColor(.white)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.5)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(14)
             .background(cardBackground)
 
             // Total Timepieces
             VStack(alignment: .leading, spacing: 6) {
-                Text("Timepieces")
+                Text("Watches")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
                     .tracking(1.0)
                     .textCase(.uppercase)
                 Text("\(timepieces.count)")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(14)
+            .background(cardBackground)
+
+            // Total Wrist Checks
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Wrist Checks")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.amberGold)
+                    .tracking(1.0)
+                    .textCase(.uppercase)
+                Text("\(totalWristChecks)")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
             .background(cardBackground)
         }
     }
