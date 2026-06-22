@@ -15,6 +15,11 @@ enum SortOption: String, CaseIterable {
     case timesWorn = "Times Worn"
 }
 
+enum AppRoute: Hashable {
+    case detail(PersistentIdentifier)
+    case detailWithEdit(PersistentIdentifier)
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \WatchTimepiece.purchaseDate, order: .reverse) private var timepieces: [WatchTimepiece]
@@ -29,8 +34,7 @@ struct ContentView: View {
     @State private var filterMovementType: String = "All"
     @State private var selectedSort: SortOption = .dateAdded
     @State private var sortAscending: Bool = false
-    /// Set after a successful scan; drives .navigationDestination to push WatchDetailView.
-    @State private var newlyAddedWatch: WatchTimepiece? = nil
+    @State private var navPath: [AppRoute] = []
 
     var filteredAndSortedTimepieces: [WatchTimepiece] {
         var filtered = timepieces
@@ -69,7 +73,7 @@ struct ContentView: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             ZStack {
                 // Background dark theme
                 Color(red: 0.07, green: 0.07, blue: 0.08)
@@ -122,11 +126,11 @@ struct ContentView: View {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(filteredAndSortedTimepieces) { timepiece in
-                                NavigationLink(destination: WatchDetailView(timepiece: timepiece)) {
-                                    WatchCardView(timepiece: timepiece)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
+                                WatchCardView(timepiece: timepiece)
+                                    .onTapGesture {
+                                        navPath.append(.detail(timepiece.persistentModelID))
+                                    }
+                                    .contextMenu {
                                     Button(role: .destructive) {
                                         modelContext.delete(timepiece)
                                     } label: {
@@ -212,16 +216,14 @@ struct ContentView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarBackground(Color(red: 0.07, green: 0.07, blue: 0.08), for: .navigationBar)
-            // Programmatic push after a successful scan
-            .navigationDestination(item: $newlyAddedWatch) { watch in
-                WatchDetailView(timepiece: watch, autoPresentEdit: true)
+            .navigationDestination(for: AppRoute.self) { route in
+                WatchDetailResolver(route: route)
             }
         }
         .fullScreenCover(isPresented: $showingScanner) {
             WatchScannerView(showingScanner: $showingScanner) { savedWatch in
-                // Delay slightly so the fullScreenCover can fully dismiss before we push.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    newlyAddedWatch = savedWatch
+                    navPath.append(.detailWithEdit(savedWatch.persistentModelID))
                 }
             }
         }
@@ -302,27 +304,27 @@ struct WatchCardView: View {
                     Spacer()
                     
                     // Wear counter visual pill
-                    HStack(spacing: 4) {
-                        Image(systemName: "hand.tap.fill")
-                            .font(.system(size: 9))
-                        Text("\(timepiece.timesWorn)")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.amberGold.opacity(0.15))
-                    .foregroundColor(.amberGold)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
-                    )
-                    .padding(8)
-                    .highPriorityGesture(
-                        TapGesture().onEnded {
-                            timepiece.timesWorn += 1
+                    Button(action: {
+                        timepiece.timesWorn += 1
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 9))
+                            Text("\(timepiece.timesWorn)")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
                         }
-                    )
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.amberGold.opacity(0.15))
+                        .foregroundColor(.amberGold)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(8)
                 }
             }
             .padding(14)
@@ -355,4 +357,28 @@ struct WatchCardView: View {
 #Preview {
     ContentView()
         .modelContainer(for: WatchTimepiece.self, inMemory: true)
+}
+
+struct WatchDetailResolver: View {
+    let route: AppRoute
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        switch route {
+        case .detail(let id):
+            // The colon explicitly tells Swift what 'T' is, no 'as?' needed
+            if let watch: WatchTimepiece = modelContext.registeredModel(for: id) {
+                WatchDetailView(timepiece: watch)
+            } else {
+                ProgressView()
+            }
+        case .detailWithEdit(let id):
+            // Same explicit declaration here
+            if let watch: WatchTimepiece = modelContext.registeredModel(for: id) {
+                WatchDetailView(timepiece: watch, autoPresentEdit: true)
+            } else {
+                ProgressView()
+            }
+        }
+    }
 }

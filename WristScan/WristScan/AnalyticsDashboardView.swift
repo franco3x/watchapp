@@ -10,6 +10,11 @@ import SwiftUI
 import SwiftData
 import Charts
 
+struct SheetDate: Identifiable {
+    let id = UUID()
+    let date: Date
+}
+
 enum DistributionMetric: String, CaseIterable {
     case watch = "Individual Watch"
     case brand = "Brand"
@@ -26,7 +31,7 @@ struct AnalyticsDashboardView: View {
 
     @State private var selectedDistribution: DistributionMetric = .brand
     @State private var selectedFrequencyMetric: DistributionMetric = .watch
-    @State private var selectedCalendarDate: Date? = nil
+    @State private var selectedCalendarDate: SheetDate? = nil
     @State private var selectedWatchesForLog: Set<WatchTimepiece> = []
 
     // MARK: - Computed Metrics
@@ -359,7 +364,7 @@ struct AnalyticsDashboardView: View {
                 
                 if let target = added.first ?? removed.first,
                    let date = Calendar.current.date(from: target) {
-                    selectedCalendarDate = date
+                    selectedCalendarDate = SheetDate(date: date)
                 }
             }
         )
@@ -380,7 +385,8 @@ struct AnalyticsDashboardView: View {
         }
         .padding(16)
         .background(cardBackground)
-        .sheet(item: $selectedCalendarDate) { date in
+        .sheet(item: $selectedCalendarDate) { sheetItem in
+            let date = sheetItem.date
             NavigationStack {
                 List(timepieces) { timepiece in
                     Button(action: {
@@ -467,8 +473,3 @@ struct AnalyticsDashboardView: View {
     }
 }
 
-// MARK: - Extensions
-
-extension Date: Identifiable {
-    public var id: Double { self.timeIntervalSince1970 }
-}

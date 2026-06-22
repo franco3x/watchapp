@@ -2,129 +2,69 @@
 //  WatchDetailView.swift
 //  WristScan
 //
-//  Purpose: Overhauled detailed view displaying an individual timepiece's hero image, critical stats, and modification history list with access to edit controls.
-//
 
 import SwiftUI
 import SwiftData
+import Charts
+
+enum DetailSheet: Identifiable {
+    case edit
+    case modification
+    case manualWristCheck
+    case accuracy
+    
+    var id: Int { hashValue }
+}
+
+struct MonthlyWearLog: Identifiable {
+    let id = UUID()
+    let month: Date
+    let count: Int
+}
 
 struct WatchDetailView: View {
     @Bindable var timepiece: WatchTimepiece
     var autoPresentEdit: Bool = false
 
-    @State private var showingAddModification = false
-    @State private var showingEditSheet = false
-    /// One-shot guard: ensures autoPresentEdit only fires once per view lifetime.
+    @State private var activeSheet: DetailSheet?
     @State private var hasAutoPresented = false
     @State private var selectedTab: String = "Overview"
-    @State private var showingManualWristCheck = false
-    @State private var showingAccuracyCheck = false
+    @State private var stableChartData: [MonthlyWearLog] = []
     
+    // Cache the decoded image out of the layout loop
+    @State private var heroUIImage: UIImage? = nil
+
+    // MARK: - Safe Computed Properties (Prevents Body Re-render Loops)
+    private var sortedWearHistory: [Date] {
+        timepiece.wearHistory.sorted(by: >)
+    }
+
+    private var safeModifications: [WatchModification] {
+        timepiece.modifications ?? []
+    }
+
+    private var sortedAccuracyLogs: [AccuracyLog] {
+        (timepiece.accuracyLogs ?? []).sorted { $0.dateChecked > $1.dateChecked }
+    }
+
+    func getMonthlyWearData() -> [MonthlyWearLog] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: timepiece.wearHistory) { date in
+            let components = calendar.dateComponents([.year, .month], from: date)
+            return calendar.date(from: components) ?? date
+        }
+        return grouped.map { MonthlyWearLog(month: $0.key, count: $0.value.count) }
+                      .sorted { $0.month < $1.month }
+    }
+    
+    // MARK: - Main Body
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Hero Image
-                if let data = timepiece.imageData, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(height: 300)
-                        .frame(maxWidth: .infinity)
-                        .clipped()
-                } else {
-                    ZStack {
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 0.16, green: 0.16, blue: 0.19),
-                                Color(red: 0.08, green: 0.08, blue: 0.09)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        
-                        Image(systemName: "clock")
-                            .font(.system(size: 60, weight: .light))
-                            .foregroundColor(.amberGold.opacity(0.18))
-                            .offset(y: -10)
-                        
-                        VStack {
-                            Spacer()
-                            Text("No Photo Uploaded")
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .foregroundColor(.white.opacity(0.3))
-                                .tracking(1.0)
-                                .padding(.bottom, 16)
-                        }
-                    }
-                    .frame(height: 300)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-                }
+                heroImageView
                 
                 VStack(alignment: .leading, spacing: 20) {
-                    // Header Block
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                .foregroundColor(.amberGold)
-                                .tracking(1.5)
-                            
-                            Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .lineLimit(2)
-                            
-                            Text(timepiece.referenceNumber.isEmpty ? "—" : timepiece.referenceNumber)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing, spacing: 6) {
-                            Button(action: {
-                                timepiece.timesWorn += 1
-                                timepiece.lastWornDate = Date.now
-                                timepiece.wearHistory.append(Date.now)
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            }) {
-                                HStack(spacing: 8) {
-                                    Text("WRIST CHECK")
-                                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                                        .tracking(1.0)
-                                    
-                                    // A small vertical divider
-                                    RoundedRectangle(cornerRadius: 0.5)
-                                        .fill(Color.amberGold.opacity(0.3))
-                                        .frame(width: 1, height: 12)
-                                    
-                                    Text("\(timepiece.timesWorn)")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.amberGold.opacity(0.12))
-                                .foregroundColor(.amberGold)
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            
-                            if let date = timepiece.lastWornDate {
-                                Text("Last Worn: \(date.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.caption2)
-                                    .foregroundColor(.gray)
-                            } else {
-                                Text("Last Worn: Unworn")
-                                    .font(.caption2)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
+                    headerBlockView
                     
                     Picker("View Selection", selection: $selectedTab) {
                         Image(systemName: "list.bullet.clipboard").tag("Overview")
@@ -136,401 +76,18 @@ struct WatchDetailView: View {
                     .pickerStyle(.segmented)
                     .padding(.vertical)
                     
-                    if selectedTab == "Overview" {
-                        // Section 1: Specifications (Core Identity)
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Core Identity")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            VStack(spacing: 0) {
-                                SpecRow(label: "Manufacturer", value: timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Model Name", value: timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Watch Type", value: timepiece.watchType)
-                            }
-                            .padding(14)
-                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Section 1b: Case & Dimensions
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Case & Dimensions")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            VStack(spacing: 0) {
-                                SpecRow(label: "Case Material", value: timepiece.caseMaterial)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Case Size", value: timepiece.caseSize > 0 ? "\(timepiece.caseSize.formatted()) mm" : "—")
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Lug to Lug", value: timepiece.lugToLug > 0 ? "\(timepiece.lugToLug.formatted()) mm" : "—")
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Lug Width", value: timepiece.lugWidth > 0 ? "\(timepiece.lugWidth.formatted()) mm" : "—")
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Water Resistance", value: timepiece.waterResistance)
-                            }
-                            .padding(14)
-                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Section 1c: Dial & Movement
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Dial & Movement")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            VStack(spacing: 0) {
-                                SpecRow(label: "Dial Color", value: timepiece.dialColor)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Lume Type", value: timepiece.lumeType)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Movement Type", value: timepiece.movementType)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Caliber", value: timepiece.movement)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Complications", value: timepiece.complications)
-                            }
-                            .padding(14)
-                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Section 1d: Band & Integrity
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Band & Integrity")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            VStack(spacing: 0) {
-                                SpecRow(label: "Strap/Bracelet", value: timepiece.strapMaterial)
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Crystal Type", value: timepiece.crystalType)
-                            }
-                            .padding(14)
-                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Section 2: Acquisition
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Acquisition")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            VStack(spacing: 0) {
-                                SpecRow(label: "Purchase Date", value: timepiece.purchaseDate.formatted(date: .abbreviated, time: .omitted))
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Purchase Price", value: timepiece.purchasePrice.formatted(.currency(code: "USD")))
-                                Divider().background(Color.white.opacity(0.1))
-                                SpecRow(label: "Times Worn", value: "\(timepiece.timesWorn) \(timepiece.timesWorn == 1 ? "wear" : "wears")")
-                            }
-                            .padding(14)
-                            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Inline Notes Scratchpad
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Notes")
-                                .font(.headline)
-                                .foregroundColor(.amberGold)
-                            
-                            TextEditor(text: $timepiece.notes)
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .frame(minHeight: 150)
-                                .padding(8)
-                                .scrollContentBackground(.hidden)
-                                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                )
-                        }
-                    } else if selectedTab == "Stats" {
-                        WristCheckCalendarView(wearHistory: timepiece.wearHistory) { tappedDate in
-                            // Check if the date already exists in the history (comparing by exact day)
-                            if let index = timepiece.wearHistory.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: tappedDate) }) {
-                                // If it exists, toggle it OFF (remove it)
-                                timepiece.wearHistory.remove(at: index)
-                            } else {
-                                // If it doesn't exist, toggle it ON (add it)
-                                timepiece.wearHistory.append(tappedDate)
-                            }
-                            // Recalibrate derived stats
-                            timepiece.timesWorn = timepiece.wearHistory.count
-                            timepiece.lastWornDate = timepiece.wearHistory.max()
-                            // Light haptic so the user feels the tap
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }
-                        .padding(.top)
-                    } else if selectedTab == "Wrist Checks" {
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Wear History")
-                                    .font(.headline)
-                                    .foregroundColor(.amberGold)
-                                Spacer()
-                                Button {
-                                    showingManualWristCheck = true
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .font(.body.weight(.bold))
-                                        .foregroundColor(.amberGold)
-                                }
-                            }
-                            
-                            if timepiece.wearHistory.isEmpty {
-                                ContentUnavailableView("No Wrist Checks", systemImage: "clock.arrow.circlepath", description: Text("Tap the Wrist Check button to log your first wear."))
-                                    .padding(.vertical, 40)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                    )
-                            } else {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(timepiece.wearHistory.sorted(by: >).enumerated()), id: \.offset) { index, date in
-                                        HStack {
-                                            Label {
-                                                Text(date.formatted(date: .abbreviated, time: .shortened))
-                                                    .font(.subheadline)
-                                                    .foregroundColor(.white)
-                                            } icon: {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .foregroundColor(.amberGold)
-                                                    .font(.system(size: 14))
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Text("Check #\(timepiece.wearHistory.count - index)")
-                                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                                .foregroundColor(.gray)
-                                                .padding(.trailing, 8)
-                                            
-                                            Button {
-                                                timepiece.wearHistory.removeAll { $0 == date }
-                                                timepiece.timesWorn = timepiece.wearHistory.count
-                                                if let maxDate = timepiece.wearHistory.max() {
-                                                    timepiece.lastWornDate = maxDate
-                                                } else {
-                                                    timepiece.lastWornDate = nil
-                                                }
-                                            } label: {
-                                                Image(systemName: "trash")
-                                                    .foregroundColor(.red)
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
-                                        .padding(.vertical, 12)
-                                        
-                                        if index < timepiece.wearHistory.count - 1 {
-                                            Divider().background(Color.white.opacity(0.1))
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 16)
-                                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                )
-                            }
-                        }
-                    } else if selectedTab == "Service Log" {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Service & Modifications")
-                                    .font(.headline)
-                                    .foregroundColor(.amberGold)
-                                Spacer()
-                                Button {
-                                    showingAddModification = true
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .font(.body.weight(.bold))
-                                        .foregroundColor(.amberGold)
-                                }
-                            }
-                            
-                            let modifications = timepiece.modifications ?? []
-                            if modifications.isEmpty {
-                                Text("No modifications recorded.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                    .italic()
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                    )
-                            } else {
-                                VStack(spacing: 12) {
-                                    ForEach(modifications) { modification in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
-                                                Text(modification.componentType)
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                                Spacer()
-                                                Text(modification.cost, format: .currency(code: "USD"))
-                                                    .font(.subheadline)
-                                                    .fontWeight(.bold)
-                                                    .foregroundColor(.amberGold)
-                                                    .padding(.trailing, 8)
-                                                
-                                                Button {
-                                                    timepiece.modifications?.removeAll { $0.id == modification.id }
-                                                } label: {
-                                                    Image(systemName: "trash")
-                                                        .foregroundColor(.red)
-                                                }
-                                                .buttonStyle(.plain)
-                                            }
-                                            
-                                            Text(modification.modificationDetails)
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                            
-                                            Text("Applied: \(modification.dateApplied.formatted(date: .abbreviated, time: .omitted))")
-                                                .font(.caption)
-                                                .foregroundColor(.gray.opacity(0.6))
-                                        }
-                                        .padding(14)
-                                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else if selectedTab == "Accuracy" {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Header
-                            HStack {
-                                Text("Accuracy Ledger")
-                                    .font(.headline)
-                                    .foregroundColor(.amberGold)
-                                Spacer()
-                                Button {
-                                    showingAccuracyCheck = true
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .font(.body.weight(.bold))
-                                        .foregroundColor(.amberGold)
-                                }
-                            }
-
-                            let logs = (timepiece.accuracyLogs ?? []).sorted { $0.dateChecked > $1.dateChecked }
-
-                            if logs.isEmpty {
-                                ContentUnavailableView(
-                                    "No Accuracy Logs",
-                                    systemImage: "stopwatch",
-                                    description: Text("Tap + to sync with the atomic clock and log your first accuracy reading.")
-                                )
-                                .padding(.vertical, 40)
-                                .frame(maxWidth: .infinity)
-                                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                )
-                            } else {
-                                VStack(spacing: 12) {
-                                    ForEach(logs) { log in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            HStack(alignment: .top) {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    // Date + position
-                                                    Text(log.dateChecked.formatted(date: .abbreviated, time: .shortened))
-                                                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                                        .foregroundColor(.white)
-
-                                                    Text(log.position)
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
-                                                }
-
-                                                Spacer()
-
-                                                // Deviation badge
-                                                let isPositive = log.deviationInSeconds >= 0
-                                                let sign = isPositive ? "+" : ""
-                                                let deviationColor: Color = isPositive ? .green : .red
-
-                                                Text("\(sign)\(String(format: "%.1f", log.deviationInSeconds))s")
-                                                    .font(.system(size: 18, weight: .black, design: .monospaced))
-                                                    .foregroundColor(deviationColor)
-                                                    .monospacedDigit()
-                                                    .padding(.trailing, 8)
-
-                                                // Inline delete
-                                                Button {
-                                                    timepiece.accuracyLogs?.removeAll { $0.id == log.id }
-                                                } label: {
-                                                    Image(systemName: "trash")
-                                                        .foregroundColor(.red)
-                                                }
-                                                .buttonStyle(.plain)
-                                            }
-
-                                            if !log.notes.isEmpty {
-                                                Text(log.notes)
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray.opacity(0.75))
-                                                    .italic()
-                                            }
-                                        }
-                                        .padding(14)
-                                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                        )
-                                    }
-                                }
-                            }
+                    // Segregated Subviews to Unburden Type Checker
+                    Group {
+                        if selectedTab == "Overview" {
+                            overviewTab
+                        } else if selectedTab == "Stats" {
+                            statsTab
+                        } else if selectedTab == "Wrist Checks" {
+                            wristChecksTab
+                        } else if selectedTab == "Service Log" {
+                            serviceLogTab
+                        } else if selectedTab == "Accuracy" {
+                            accuracyTab
                         }
                     }
                 }
@@ -542,37 +99,390 @@ struct WatchDetailView: View {
         .onAppear {
             if autoPresentEdit && !hasAutoPresented {
                 hasAutoPresented = true
-                showingEditSheet = true
+                activeSheet = .edit
+            }
+            stableChartData = getMonthlyWearData()
+        }
+        // Asynchronous background thread processing for external storage images
+        .task(id: timepiece.persistentModelID) {
+            if let data = timepiece.imageData {
+                if let decodedImage = UIImage(data: data) {
+                    await MainActor.run {
+                        self.heroUIImage = decodedImage
+                    }
+                }
             }
         }
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit") {
-                    showingEditSheet = true
+                Button("Edit") { activeSheet = .edit }
+                    .foregroundColor(.amberGold)
+            }
+        }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .edit:
+                NavigationStack {
+                    EditWatchView(timepiece: timepiece)
                 }
-                .foregroundColor(.amberGold)
+            case .modification:
+                AddModificationView(timepiece: timepiece)
+            case .manualWristCheck:
+                ManualWristCheckView(timepiece: timepiece)
+                    .presentationDetents([.medium])
+            case .accuracy:
+                AccuracyCheckView(timepiece: timepiece)
             }
         }
-        .sheet(isPresented: $showingAddModification) {
-            AddModificationView(timepiece: timepiece)
+    }
+
+    // MARK: - Extracted Component Views
+    @ViewBuilder
+    private var heroImageView: some View {
+        if let uiImage = heroUIImage {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(height: 300)
+                .frame(maxWidth: .infinity)
+                .clipped()
+        } else {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.16, green: 0.16, blue: 0.19),
+                        Color(red: 0.08, green: 0.08, blue: 0.09)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                
+                Image(systemName: "clock")
+                    .font(.system(size: 60, weight: .light))
+                    .foregroundColor(.amberGold.opacity(0.18))
+                    .offset(y: -10)
+                
+                VStack {
+                    Spacer()
+                    Text("No Photo Uploaded")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.3))
+                        .tracking(1.0)
+                        .padding(.bottom, 16)
+                }
+            }
+            .frame(height: 300)
+            .frame(maxWidth: .infinity)
+            .clipped()
         }
-        .sheet(isPresented: $showingEditSheet) {
-            NavigationStack {
-                EditWatchView(timepiece: timepiece)
+    }
+
+    @ViewBuilder
+    private var headerBlockView: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text((timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer).uppercased())
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.amberGold)
+                    .tracking(1.5)
+                
+                Text(timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                
+                Text(timepiece.referenceNumber.isEmpty ? "—" : timepiece.referenceNumber)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 6) {
+                Button(action: {
+                    timepiece.timesWorn += 1
+                    timepiece.lastWornDate = Date.now
+                    timepiece.wearHistory.append(Date.now)
+                    stableChartData = getMonthlyWearData()
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                }) {
+                    HStack(spacing: 8) {
+                        Text("WRIST CHECK")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(1.0)
+                        
+                        RoundedRectangle(cornerRadius: 0.5)
+                            .fill(Color.amberGold.opacity(0.3))
+                            .frame(width: 1, height: 12)
+                        
+                        Text("\(timepiece.timesWorn)")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.amberGold.opacity(0.12))
+                    .foregroundColor(.amberGold)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.amberGold.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                if let date = timepiece.lastWornDate {
+                    Text("Last Worn: \(date.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                } else {
+                    Text("Last Worn: Unworn")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
             }
         }
-        .sheet(isPresented: $showingManualWristCheck) {
-            ManualWristCheckView(timepiece: timepiece)
-                .presentationDetents([.medium])
+    }
+
+    // MARK: - Tab Panes
+    @ViewBuilder
+    private var overviewTab: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Core Identity")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                
+                VStack(spacing: 0) {
+                    SpecRow(label: "Manufacturer", value: timepiece.manufacturer.isEmpty ? "Unknown Manufacturer" : timepiece.manufacturer)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Model Name", value: timepiece.modelName.isEmpty ? "New Watch" : timepiece.modelName)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Reference Number", value: timepiece.referenceNumber)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Watch Type", value: timepiece.watchType)
+                }
+                .padding(14)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(12)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Case & Dimensions")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                
+                VStack(spacing: 0) {
+                    SpecRow(label: "Case Material", value: timepiece.caseMaterial)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Case Size", value: timepiece.caseSize > 0 ? "\(timepiece.caseSize.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Lug to Lug", value: timepiece.lugToLug > 0 ? "\(timepiece.lugToLug.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Lug Width", value: timepiece.lugWidth > 0 ? "\(timepiece.lugWidth.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Water Resistance", value: timepiece.waterResistance)
+                }
+                .padding(14)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(12)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Notes")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                
+                TextField("Add notes here...", text: $timepiece.notes, axis: .vertical)
+                    .lineLimit(5...15)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .padding(12)
+                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                    .cornerRadius(8)
+            }
         }
-        .sheet(isPresented: $showingAccuracyCheck) {
-            AccuracyCheckView(timepiece: timepiece)
+    }
+
+    @ViewBuilder
+    private var statsTab: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Wear Frequency by Month")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                
+                if stableChartData.isEmpty {
+                    Text("No wear data available.")
+                        .foregroundColor(.secondary)
+                        .padding()
+                } else {
+                    Chart(stableChartData) { item in
+                        BarMark(
+                            x: .value("Month", item.month, unit: .month),
+                            y: .value("Wears", item.count)
+                        )
+                        .foregroundStyle(Color.amberGold.gradient)
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: .month)) { _ in
+                            AxisGridLine()
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).year(.twoDigits))
+                        }
+                    }
+                    .frame(height: 200)
+                    .padding(.vertical, 8)
+                }
+            }
+            .padding()
+            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            )
+
+            WristCheckCalendarView(wearHistory: timepiece.wearHistory) { tappedDate in
+                if let index = timepiece.wearHistory.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: tappedDate) }) {
+                    timepiece.wearHistory.remove(at: index)
+                } else {
+                    timepiece.wearHistory.append(tappedDate)
+                }
+                timepiece.timesWorn = timepiece.wearHistory.count
+                timepiece.lastWornDate = timepiece.wearHistory.max()
+                stableChartData = getMonthlyWearData()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+            .padding(.top)
+        }
+    }
+
+    @ViewBuilder
+    private var wristChecksTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Wear History")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                Spacer()
+                Button { activeSheet = .manualWristCheck } label: {
+                    Image(systemName: "plus").foregroundColor(.amberGold)
+                }
+            }
+            
+            if sortedWearHistory.isEmpty {
+                ContentUnavailableView("No Wrist Checks", systemImage: "clock.arrow.circlepath")
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(sortedWearHistory.enumerated()), id: \.offset) { index, date in
+                        HStack {
+                            Text(date.formatted(date: .abbreviated, time: .shortened))
+                            Spacer()
+                            Button {
+                                timepiece.wearHistory.removeAll { $0 == date }
+                                timepiece.timesWorn = timepiece.wearHistory.count
+                                timepiece.lastWornDate = timepiece.wearHistory.max()
+                                stableChartData = getMonthlyWearData()
+                            } label: {
+                                Image(systemName: "trash").foregroundColor(.red)
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        
+                        if index < sortedWearHistory.count - 1 {
+                            Divider().background(Color.white.opacity(0.1))
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var serviceLogTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Service & Modifications")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                Spacer()
+                Button { activeSheet = .modification } label: {
+                    Image(systemName: "plus").foregroundColor(.amberGold)
+                }
+            }
+            
+            if safeModifications.isEmpty {
+                Text("No modifications recorded.").italic().foregroundColor(.gray)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(safeModifications) { modification in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(modification.componentType).foregroundColor(.white)
+                                Spacer()
+                                Button {
+                                    timepiece.modifications?.removeAll { $0.id == modification.id }
+                                } label: {
+                                    Image(systemName: "trash").foregroundColor(.red)
+                                }
+                            }
+                            Text(modification.modificationDetails).foregroundColor(.gray)
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var accuracyTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Accuracy Ledger")
+                    .font(.headline)
+                    .foregroundColor(.amberGold)
+                Spacer()
+                Button { activeSheet = .accuracy } label: {
+                    Image(systemName: "plus").foregroundColor(.amberGold)
+                }
+            }
+
+            if sortedAccuracyLogs.isEmpty {
+                Text("No logs available.").foregroundColor(.gray)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(sortedAccuracyLogs) { log in
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(log.dateChecked.formatted(date: .abbreviated, time: .shortened))
+                                Text(log.position).font(.caption).foregroundColor(.gray)
+                            }
+                            Spacer()
+                            Text("\(log.deviationInSeconds >= 0 ? "+" : "")\(String(format: "%.1f", log.deviationInSeconds))s")
+                            Button {
+                                timepiece.accuracyLogs?.removeAll { $0.id == log.id }
+                            } label: {
+                                Image(systemName: "trash").foregroundColor(.red)
+                            }
+                        }
+                        .padding(14)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                        .cornerRadius(12)
+                    }
+                }
+            }
         }
     }
 }
 
+// MARK: - Helper Structs
 struct MetricCard: View {
     let label: String
     let value: String
@@ -595,10 +505,7 @@ struct MetricCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.12, green: 0.12, blue: 0.14))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06), lineWidth: 1))
     }
 }
 
@@ -643,9 +550,7 @@ struct AddModificationView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -664,37 +569,5 @@ struct AddModificationView: View {
                 }
             }
         }
-    }
-}
-
-#Preview {
-    do {
-        // 1. Create a temporary memory-only database
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: WatchTimepiece.self, configurations: config)
-        
-        // 2. Create a fake watch to populate the UI
-        let dummyWatch = WatchTimepiece(
-            manufacturer: "Rolex",
-            name: "Submariner",
-            referenceNumber: "124060",
-            purchaseDate: Date(),
-            purchasePrice: 9100.0
-        )
-        dummyWatch.dialColor = "Black"
-        dummyWatch.caseSize = 41.0
-        dummyWatch.movementType = "Automatic"
-        
-        // Insert it into the fake database
-        container.mainContext.insert(dummyWatch)
-        
-        // 3. Render the view
-        return NavigationStack {
-            WatchDetailView(timepiece: dummyWatch)
-        }
-        .modelContainer(container)
-        
-    } catch {
-        return Text("Failed to load preview: \(error.localizedDescription)")
     }
 }
