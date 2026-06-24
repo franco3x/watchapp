@@ -148,6 +148,18 @@ struct AnalyticsDashboardView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarBackground(Color(red: 0.07, green: 0.07, blue: 0.08), for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: RewindView()) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                            Text("Rewind")
+                        }
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(.amberGold)
+                    }
+                }
+            }
         }
     }
 
