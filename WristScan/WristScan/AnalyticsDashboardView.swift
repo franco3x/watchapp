@@ -173,7 +173,7 @@ struct AnalyticsDashboardView: View {
     private var summaryCards: some View {
         HStack(spacing: 12) {
             // Total Collection Value
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .center, spacing: 6) {
                 Text("Value")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
@@ -185,12 +185,12 @@ struct AnalyticsDashboardView: View {
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(14)
             .background(cardBackground)
 
             // Total Timepieces
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .center, spacing: 6) {
                 Text("Watches")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
@@ -202,12 +202,12 @@ struct AnalyticsDashboardView: View {
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(14)
             .background(cardBackground)
 
             // Total Wrist Checks
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .center, spacing: 6) {
                 Text("Wrist Checks")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.amberGold)
@@ -219,7 +219,7 @@ struct AnalyticsDashboardView: View {
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(14)
             .background(cardBackground)
         }

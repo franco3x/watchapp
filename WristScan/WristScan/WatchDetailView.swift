@@ -7,6 +7,12 @@ import SwiftUI
 import SwiftData
 import Charts
 
+struct MonthlyWearLog: Identifiable {
+    let id = UUID()
+    let month: Date
+    let count: Int
+}
+
 enum DetailSheet: Identifiable {
     case edit
     case modification
@@ -14,12 +20,6 @@ enum DetailSheet: Identifiable {
     case accuracy
     
     var id: Int { hashValue }
-}
-
-struct MonthlyWearLog: Identifiable {
-    let id = UUID()
-    let month: Date
-    let count: Int
 }
 
 struct WatchDetailView: View {
@@ -34,7 +34,7 @@ struct WatchDetailView: View {
     // Cache the decoded image out of the layout loop
     @State private var heroUIImage: UIImage? = nil
 
-    // MARK: - Safe Computed Properties (Prevents Body Re-render Loops)
+    // MARK: - Safe Computed Properties
     private var sortedWearHistory: [Date] {
         timepiece.wearHistory.sorted(by: >)
     }
@@ -76,7 +76,7 @@ struct WatchDetailView: View {
                     .pickerStyle(.segmented)
                     .padding(.vertical)
                     
-                    // Segregated Subviews to Unburden Type Checker
+                    // Segregated Subviews
                     Group {
                         if selectedTab == "Overview" {
                             overviewTab
@@ -103,7 +103,6 @@ struct WatchDetailView: View {
             }
             stableChartData = getMonthlyWearData()
         }
-        // Asynchronous background thread processing for external storage images
         .task(id: timepiece.persistentModelID) {
             if let data = timepiece.imageData {
                 if let decodedImage = UIImage(data: data) {
@@ -117,8 +116,10 @@ struct WatchDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit") { activeSheet = .edit }
-                    .foregroundColor(.amberGold)
+                Button("Edit") {
+                    activeSheet = .edit
+                }
+                .foregroundColor(.amberGold)
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -134,6 +135,11 @@ struct WatchDetailView: View {
                     .presentationDetents([.medium])
             case .accuracy:
                 AccuracyCheckView(timepiece: timepiece)
+            }
+        }
+        .onChange(of: activeSheet) { oldValue, newValue in
+            if newValue == nil {
+                stableChartData = getMonthlyWearData()
             }
         }
     }
@@ -338,11 +344,7 @@ struct WatchDetailView: View {
             .padding()
             .background(Color(red: 0.12, green: 0.12, blue: 0.14))
             .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-            )
-
+            
             WristCheckCalendarView(wearHistory: timepiece.wearHistory) { tappedDate in
                 if let index = timepiece.wearHistory.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: tappedDate) }) {
                     timepiece.wearHistory.remove(at: index)
