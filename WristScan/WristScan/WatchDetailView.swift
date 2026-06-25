@@ -125,9 +125,7 @@ struct WatchDetailView: View {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .edit:
-                NavigationStack {
-                    EditWatchView(timepiece: timepiece)
-                }
+                EditWatchSheetContainer(timepiece: timepiece)
             case .modification:
                 AddModificationView(timepiece: timepiece)
             case .manualWristCheck:
@@ -570,6 +568,16 @@ struct AddModificationView: View {
                     .disabled(componentType.isEmpty || details.isEmpty)
                 }
             }
+        }
+    }
+}
+
+struct EditWatchSheetContainer: View {
+    @Bindable var timepiece: WatchTimepiece
+    
+    var body: some View {
+        NavigationStack {
+            EditWatchView(timepiece: timepiece)
         }
     }
 }
