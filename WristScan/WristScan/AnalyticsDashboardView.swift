@@ -154,6 +154,7 @@ struct AnalyticsDashboardView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "sparkles")
                             Text("Rewind")
+                                .padding(.trailing,3)
                         }
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(.amberGold)
@@ -507,3 +508,32 @@ struct AnalyticsDashboardView: View {
     }
 }
 
+//#Preview {
+//    NavigationStack {
+//        AnalyticsDashboardView()
+//    }
+    // This gives the Canvas a temporary, blank database so it doesn't crash
+    //.modelContainer(for: WatchTimepiece.self, inMemory: true)
+//}
+
+//#Preview {
+  //  let config = ModelConfiguration(isStoredInMemoryOnly: true)
+ //   let container = try! ModelContainer(for: WatchTimepiece.self, configurations: config)
+    
+    // Create a fake watch for the preview
+ //   let mockWatch = WatchTimepiece(
+  //      manufacturer: "Seiko",
+  //      name: "5 GMT", // Ensure the argument name matches your model's requirement
+   //     referenceNumber: "SSK001", // Placeholder
+ //       purchaseDate: Date(), // Placeholder
+  //      purchasePrice: 0.0, // Placeholder
+ //       wearHistory: [Date(), Date().addingTimeInterval(-86400)]
+ //   )
+//    container.mainContext.insert(mockWatch)
+    
+    // REMOVED 'return' keyword here
+ //   NavigationStack {
+ //       AnalyticsDashboardView()
+ //   }
+ //   .modelContainer(container)
+//}
