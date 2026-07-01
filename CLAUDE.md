@@ -76,12 +76,33 @@ WristScan is a specialized iOS application designed to catalog and track persona
 * **Image Storage vs. DB Bloat:** We deliberately chose NOT to store raw, high-resolution user photos directly in SwiftData. Instead, `ImageAdjusterView` flattens the user's pan/zoom adjustments into a compressed, screen-resolution UI render before saving. This prevents SQLite BLOB faulting from choking the app.
 * **Hybrid Cache vs. Local Database:** For Epic 5, we deliberately rejected building and maintaining our own massive ETL pipeline of global watch specifications. We are implementing a "Read-Through Cache." The app queries a lightweight cloud database for a reference number; if missing, it falls back to an LLM to generate the specs, presents them to the user for human-in-the-loop verification, and then writes the verified data to our cloud for future users.
 
-## Known Issues & Unfinished Work
+## Feature and Task Status
 
-* **Epic 3 (Social Sharing):** Pending the creation of a rendering engine to export custom collection metric graphics for social media.
-* **Epic 4 (Data Portability):** CSV *export* is built (`SettingsView`). Still pending: a CSV *parser* to import historical wear data.
-* **Epic 5 (AI Enrichment):** The LLM JSON generation, Read-Through Cache cloud setup, and WatchCharts integration have been architected but not yet coded.
-* **Current Stabilization:** Still verifying if the `.onChange` cache refreshes and the `IsolatedPhotoPickerView` have fully resolved edge-case UI staleness and picker scroll-jumping.
+Living project tracker, starting from today forward. Already-shipped functionality is documented once in Screens & Features above and isn't duplicated here — this list is only for things worth actively tracking as they move toward done.
+
+### Done
+
+- [x] CSV export (`SettingsView`) — collection details, purchase history, and modifications
+- [x] Scanner: auto-redirect to manual entry after 2 consecutive failed scans
+- [x] Insights: removed "Individual Watch" from the Collection Distribution pie chart dropdown
+- [x] Insights: fixed overlapping x-axis labels on the Top 5 Wrist Checks bar chart
+- [x] Insights: added a time-window filter (Last Month / Last Year / This Year / All Time) to Top 5 Wrist Checks
+
+### In Progress
+
+- [ ] Current Stabilization — verify `.onChange` cache refreshes and `IsolatedPhotoPickerView` have fully resolved edge-case UI staleness and picker scroll-jumping
+
+### Not Started
+
+- [ ] Epic 3 — social-sharing rendering engine for collection metric graphics
+- [ ] Epic 4 — CSV import parser for historical wear data
+- [ ] Epic 5 — LLM JSON generation engine (OCR text / reference number → structured specs)
+- [ ] Epic 5 — cloud read-through cache backend
+
+### Icebox
+
+- [ ] Epic 5 — WatchCharts API integration for market valuations
+- [ ] Push notifications reminding the user to check/wear a watch
 
 ## Things to NOT Change Without Asking
 
