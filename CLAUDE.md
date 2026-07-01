@@ -103,6 +103,7 @@ Living project tracker, starting from today forward. Already-shipped functionali
 
 - [ ] Epic 5 — WatchCharts API integration for market valuations
 - [ ] Push notifications reminding the user to check/wear a watch
+- [ ] Badge/leveling system
 
 ## Things to NOT Change Without Asking
 
