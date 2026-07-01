@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="image-slot.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #0d0d0f; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div data-screen-label="Watch Spec Card" style="width: 1080px; height: 1600px; margin: 0 auto; position: relative; overflow: hidden; background: radial-gradient(120% 80% at 50% 6%, #191920 0%, #131317 46%, #0f0f12 100%); font-family: 'Manrope', -apple-system, system-ui, sans-serif; display: flex; flex-direction: column; padding: 64px 72px 56px; color: #fff;">
+
+  <!-- HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 3.5px; color: #7f7f87;">WATCH&nbsp;&nbsp;SPEC&nbsp;&nbsp;SHEET</div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; letter-spacing: 3px; color: #d9ab61;">CITIZEN</div>
+        <div style="font-family: 'Nunito', sans-serif; font-size: 62px; font-weight: 800; letter-spacing: -1px; line-height: 0.95; color: #fff;">Nighthawk</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 500; letter-spacing: 1px; color: #6f6f77;">REF · BJ7000-52E</div>
+      </div>
+    </div>
+    <div style="flex-shrink: 0; margin-top: 8px; display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; border: 1px solid rgba(217,171,97,0.38); border-radius: 999px; background: rgba(217,171,97,0.07);">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #d9ab61;">WRIST CHECK</span>
+      <span style="width: 1px; height: 18px; background: rgba(217,171,97,0.4);"></span>
+      <span style="font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 800; color: #fff;">16</span>
+    </div>
+  </div>
+
+  <!-- HERO IMAGE -->
+  <image-slot id="spec-hero" src="assets/nighthawk_full.jpg" shape="rounded" radius="28" fit="cover" placeholder="Drop your watch photo" style="display:block; width:100%; height:470px; margin-top:34px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 30px 70px rgba(0,0,0,0.4);"></image-slot>
+
+  <!-- SPECIFICATIONS -->
+  <div style="margin-top: 34px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 3px; color: #7f7f87;">SPECIFICATIONS</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; background: #1f1f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; overflow: hidden;">
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">CASE MATERIAL</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">Steel</span>
+      </div>
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.07); border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">CASE SIZE</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">42<span style="font-size: 16px; font-weight: 600; color: #8b8b92; margin-left: 4px;">mm</span></span>
+      </div>
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.07); border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">WATER RESIST</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">200<span style="font-size: 16px; font-weight: 600; color: #8b8b92; margin-left: 4px;">m</span></span>
+      </div>
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">LUG TO LUG</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">47<span style="font-size: 16px; font-weight: 600; color: #8b8b92; margin-left: 4px;">mm</span></span>
+      </div>
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">LUG WIDTH</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">22<span style="font-size: 16px; font-weight: 600; color: #8b8b92; margin-left: 4px;">mm</span></span>
+      </div>
+      <div style="padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: #d9ab61;">WATCH TYPE</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; color: #fff;">Pilot</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEAR FREQUENCY -->
+  <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 3px; color: #d9ab61;">WEAR FREQUENCY</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 1.5px; color: #6f6f77;">LAST 12 MONTHS</span>
+    </div>
+    <div style="background: #1f1f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 28px 30px 22px; display: flex; align-items: flex-end; gap: 14px; height: 210px;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 8%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px; min-height: 4px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">F</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 33%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">M</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 67%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">A</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 33%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">M</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 100%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">J</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 67%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">J</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 33%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">A</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 8%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px; min-height: 4px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">S</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 67%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">O</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 33%; background: linear-gradient(to top, #a87e3f, #d9ab61); border-radius: 5px;"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6f6f77;">N</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%;">
+        <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;"><div style="width: 100%; height: 100%; background: linear-gradient(to top, #d9ab61, #f0d29a); border-radius: 5px; box-shadow: 0 0 16px rgba(217,171,97,0.45);"></div></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #d9ab61; font-weight: 700;">D</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 20px;"></div>
+
+  <!-- FOOTER STATS + MARK -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div style="background: #1f1f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 22px; padding: 24px 28px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">TIMES WORN</span>
+      <span style="font-family: 'Manrope', sans-serif; font-size: 44px; font-weight: 800; line-height: 1; color: #fff;">16</span>
+    </div>
+    <div style="background: #1f1f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 22px; padding: 24px 28px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">LAST WORN</span>
+      <span style="font-family: 'Manrope', sans-serif; font-size: 32px; font-weight: 800; line-height: 1.15; color: #fff;">Jan 30, 2026</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 26px; display: flex; align-items: center; gap: 12px;">
+    <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d9ab61; position: relative; display: inline-block;"><span style="position: absolute; top: 50%; left: 50%; width: 2px; height: 6px; background: #d9ab61; transform: translate(-50%, -100%); transform-origin: bottom;"></span></span>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #6f6f77;">CAPTURED WITH WRISTSCAN</span>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1080, &quot;height&quot;: 1600}}"></script>
+</body>
+</html>

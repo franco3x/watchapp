@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #0d0d0f; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div data-screen-label="Rewind Share Card" style="width: 1080px; height: 1350px; margin: 0 auto; position: relative; overflow: hidden; background: radial-gradient(120% 90% at 50% 8%, #191920 0%, #131317 46%, #0f0f12 100%); font-family: 'Manrope', -apple-system, system-ui, sans-serif; display: flex; flex-direction: column; padding: 64px 72px 56px; color: #fff;">
+
+  <!-- HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 3.5px; color: #7f7f87;">COLLECTION&nbsp;&nbsp;INSIGHT</div>
+      <div style="font-family: 'Nunito', sans-serif; font-size: 50px; font-weight: 800; letter-spacing: -0.8px; line-height: 1; color: #fff;">WristScan Rewind</div>
+    </div>
+    <div style="flex-shrink: 0; margin-top: 6px; display: inline-flex; align-items: center; gap: 10px; padding: 11px 20px; border: 1px solid rgba(217,171,97,0.38); border-radius: 999px; background: rgba(217,171,97,0.07);">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #d9ab61; box-shadow: 0 0 10px rgba(217,171,97,0.7);"></span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #d9ab61;">THIS YEAR</span>
+    </div>
+  </div>
+
+  <!-- HERO — MOST WORN WATCH -->
+  <div style="margin-top: 36px; display: flex; flex-direction: column; gap: 20px;">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 27px; font-weight: 700; letter-spacing: 4px; color: #d9ab61;">MOST WORN WATCH</div>
+
+    <div style="position: relative; display: flex; flex-direction: column; background: #1f1f24; border-radius: 30px; border: 1px solid rgba(217,171,97,0.22); overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);">
+      <!-- watch image -->
+      <div style="position: relative; height: 626px; overflow: hidden;">
+        <img src="assets/nighthawk_full.jpg" alt="Citizen Nighthawk on wrist" style="width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; display: block;">
+        <!-- scrim fading into card -->
+        <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(31,31,36,0) 55%, rgba(31,31,36,0.55) 82%, #1f1f24 100%);"></div>
+        <!-- rank medal -->
+        <div style="position: absolute; top: 24px; left: 24px; display: inline-flex; align-items: center; gap: 12px; padding: 9px 9px 9px 9px; padding-right: 18px; background: #d9ab61; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+          <span style="width: 34px; height: 34px; border-radius: 50%; background: #141416; color: #d9ab61; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 19px; display: flex; align-items: center; justify-content: center;">1</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #171512;">TOP PICK</span>
+        </div>
+      </div>
+
+      <!-- caption -->
+      <div style="padding: 30px 44px 40px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: 2.5px; color: #8b8b92;">CITIZEN</div>
+          <div style="font-family: 'Manrope', sans-serif; font-size: 74px; font-weight: 800; letter-spacing: -1.5px; line-height: 0.95; color: #fff;">Nighthawk</div>
+        </div>
+        <div style="flex-shrink: 0; display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 16px 22px; border-radius: 18px; background: rgba(217,171,97,0.12); border: 1px solid rgba(217,171,97,0.22);">
+          <span style="font-family: 'Manrope', sans-serif; font-size: 42px; font-weight: 800; line-height: 1; color: #d9ab61;">15</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; color: #d9ab61; opacity: 0.85;">WRIST CHECKS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 24px;"></div>
+
+  <!-- STAT CARD -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 3px; color: #7f7f87;">THE NUMBERS</div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); background: #1f1f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 28px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);">
+      <div style="padding: 32px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">TOTAL WEARS</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 46px; font-weight: 800; line-height: 1; color: #fff;">51</span>
+      </div>
+      <div style="padding: 32px 28px; display: flex; flex-direction: column; gap: 14px; border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">LONGEST STREAK</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 46px; font-weight: 800; line-height: 1; color: #fff;">11<span style="font-size: 21px; font-weight: 700; color: #8b8b92; margin-left: 5px;">days</span></span>
+      </div>
+      <div style="padding: 32px 28px; display: flex; flex-direction: column; gap: 14px; border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">WATCHES WORN</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 46px; font-weight: 800; line-height: 1; color: #fff;">5</span>
+      </div>
+      <div style="padding: 32px 28px; display: flex; flex-direction: column; gap: 14px; border-left: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #d9ab61;">TOP BRAND</span>
+        <span style="font-family: 'Manrope', sans-serif; font-size: 38px; font-weight: 800; line-height: 1.1; color: #fff;">Rolex</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="margin-top: 34px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d9ab61; position: relative; display: inline-block;"><span style="position: absolute; top: 50%; left: 50%; width: 2px; height: 6px; background: #d9ab61; transform: translate(-50%, -100%); transform-origin: bottom;"></span></span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #6f6f77;">CAPTURED WITH WRISTSCAN</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1080, &quot;height&quot;: 1350}}"></script>
+</body>
+</html>
