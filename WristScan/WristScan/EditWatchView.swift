@@ -14,6 +14,9 @@ struct EditWatchView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
     
+    var onCancel: (() -> Void)? = nil
+    var onSave: (() -> Void)? = nil
+    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var rawSelectedImage: UIImage? = nil
     @State private var showCropper: Bool = false
@@ -290,9 +293,31 @@ struct EditWatchView: View {
         .navigationTitle("Edit Watch")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    onCancel?()
+                    dismiss()
+                }
+                .foregroundColor(.white.opacity(0.85))
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
-                    timepiece.name = timepiece.modelName
+                    let normalizedName = timepiece.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !normalizedName.isEmpty {
+                        timepiece.modelName = normalizedName
+                        timepiece.name = normalizedName
+                    } else if timepiece.name.isEmpty {
+                        timepiece.name = timepiece.manufacturer.isEmpty ? "New Watch" : timepiece.manufacturer
+                    }
+                    if timepiece.manufacturer.isEmpty {
+                        timepiece.manufacturer = "Unknown Manufacturer"
+                    }
+                    do {
+                        try modelContext.save()
+                    } catch {
+                        print("[EditWatchView] Failed to save watch: \(error.localizedDescription)")
+                    }
+                    onSave?()
                     dismiss()
                 }
                 .fontWeight(.bold)

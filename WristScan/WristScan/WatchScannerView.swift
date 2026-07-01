@@ -322,6 +322,8 @@ struct WatchScannerView: View {
     @State private var tiedMatches: [WatchCatalogItem] = []
     @State private var showingDisambiguation = false
     @State private var capturedImageData: Data? = nil
+    @State private var pendingReviewWatch: WatchTimepiece?
+    @State private var didSaveReviewWatch = false
 
     private let cutoutDiameter: CGFloat = 260
 
@@ -391,6 +393,20 @@ struct WatchScannerView: View {
         .sheet(isPresented: $showingManualSearch) {
             CatalogSelectionView { selectedItem in
                 saveFromCatalog(selectedItem)
+            }
+        }
+        .sheet(item: $pendingReviewWatch, onDismiss: handleReviewSheetDismiss) { watch in
+            NavigationStack {
+                EditWatchView(
+                    timepiece: watch,
+                    onCancel: {
+                        context.delete(watch)
+                        try? context.save()
+                    },
+                    onSave: {
+                        didSaveReviewWatch = true
+                    }
+                )
             }
         }
         .confirmationDialog("Select Watch Model", isPresented: $showingDisambiguation, titleVisibility: .visible) {
@@ -506,7 +522,8 @@ struct WatchScannerView: View {
             referenceNumber: item.referenceNumber,
             purchaseDate:    Date(),
             purchasePrice:   0.0,
-            imageData:       imageData
+            imageData:       imageData,
+            modelName:       item.modelName
         )
         
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
@@ -519,9 +536,9 @@ struct WatchScannerView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             context.insert(timepiece)
-            showingScanner = false
-            // Notify the caller so it can navigate to WatchDetailView
-            onWatchSaved?(timepiece)
+            try? context.save()
+            pendingReviewWatch = timepiece
+            didSaveReviewWatch = false
         }
     }
 
@@ -588,15 +605,15 @@ struct WatchScannerView: View {
             name:            item.modelName,
             referenceNumber: item.referenceNumber,
             purchaseDate:    Date(),
-            purchasePrice:   0.0
+            purchasePrice:   0.0,
+            modelName:       item.modelName
         )
         context.insert(newWatch)
         try? context.save()
-        print("[Database] Manually added \(newWatch.name) to collection.")
+        print("[Database] Prepared \(newWatch.name) for review.")
         showingManualSearch = false
-        dismiss()
-        // Notify the caller so it can navigate to WatchDetailView
-        onWatchSaved?(newWatch)
+        pendingReviewWatch = newWatch
+        didSaveReviewWatch = false
     }
 
     private func handleManualEntry() {
@@ -611,9 +628,18 @@ struct WatchScannerView: View {
         manualWatch.modelName = ""
         context.insert(manualWatch)
         try? context.save()
-        showingScanner = false
-        // Trigger progressive onboarding handoff
-        onWatchSaved?(manualWatch)
+        pendingReviewWatch = manualWatch
+        didSaveReviewWatch = false
+    }
+
+    private func handleReviewSheetDismiss() {
+        let reviewWatch = pendingReviewWatch
+        pendingReviewWatch = nil
+        if didSaveReviewWatch, let watch = reviewWatch {
+            showingScanner = false
+            onWatchSaved?(watch)
+        }
+        didSaveReviewWatch = false
     }
 }
 

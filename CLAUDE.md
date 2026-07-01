@@ -1,4 +1,23 @@
+# Working with Me
+
+As you build, explain what you’re doing in plain English — assume I don’t know developer terminology unless I’ve used it myself.
+
+Specifically:
+
+	•	When you create a new file, briefly explain what it’s for and why it needs to exist.
+	•	When you’re about to run a terminal command, explain what it does before running it.
+	•	When you hit an error or build failure, explain what went wrong in plain English before fixing it.
+	•	When you make an architectural or design decision (not just small edits), explain the reasoning.
+
+Keep explanations short and practical — a few sentences, not a lecture. Skip explaining trivial changes like renaming a variable or fixing a typo.
+
+If I ask ‘why’ or ‘what does that mean,’ pause and explain in more depth before continuing.
+
+The goal is for me to learn as we go, not just end up with a working app.
+
+
 # WristScan Project Brief
+
 
 ## App Summary
 
@@ -19,12 +38,18 @@ WristScan is a specialized iOS application designed to catalog and track persona
 
 ## Screens & Features
 
+* **MainTabView:** Root navigation. Three tabs: Watch Box (collection grid), Insights (analytics dashboard), and Atomic Time (NTP-verified clock dashboard).
 * **WatchDetailView:** The central hub for a specific watch, displaying hero imagery, core specifications, wear frequency charts, service logs, and an accuracy ledger.
-* **WatchCatalogItem / Watch Box:** The main grid/list view displaying the user's entire collection.
+* **ContentView / Watch Box:** The main grid/list view displaying the user's entire collection.
 * **EditWatchView (with EditWatchSheetContainer):** The data entry form for updating watch specifications, housing the photo selection intercept logic.
 * **ImageAdjusterView:** A custom cropping engine that allows users to pan and zoom high-resolution photos, utilizing `ImageRenderer` to capture and save a lightweight, screen-resolution crop.
-* **RewindView (Epic 2):** A generated analytics report providing insights into collection wear habits over a selected period.
-* **WatchScannerView (In Progress):** The camera interface for capturing watch faces and extracting raw dial text via Apple's Vision framework.
+* **AnalyticsDashboardView / RewindView (Epic 2):** `AnalyticsDashboardView` is the Insights tab landing screen; it links to `RewindView`, a generated analytics report providing insights into collection wear habits over a selected period. Report logic lives in `RewindEngine`.
+* **WatchScannerView:** The camera interface for capturing watch faces. Uses Apple's Vision framework to extract raw dial text on-device, then fuzzy-matches it against the local `WatchCatalogItem` reference database to identify the watch. This is the non-AI matching path; the LLM enrichment fallback described under Epic 5 is not yet built.
+* **AtomicClockManager / AtomicClockDashboardView / AccuracyCheckView:** A zero-dependency NTP (network time) client that queries `pool.ntp.org` directly to get true time independent of the device's own clock, so accuracy-ledger entries are checked against a trustworthy reference rather than a potentially-wrong iPhone clock.
+* **WristCheckCalendarView / ManualWristCheckView:** A calendar heatmap of a watch's wear history, plus a manual-entry flow for logging (or backfilling) a wrist check for a past date.
+* **SettingsView:** Houses data portability controls — currently CSV *export* of the collection (details, purchase history, modifications). CSV *import* is not yet built; see Epic 4 below.
+* **CatalogSelectionView / FilterSheetView / CatalogDebugView:** Supporting UI for browsing, filtering, and (in debug builds) inspecting the local `WatchCatalogItem` reference catalog used by the scanner.
+* **HydrationManager:** Seeds the local database from a bundled `watch_seed.json` file on first launch.
 
 ## Third-Party Dependencies & External Services
 
@@ -38,6 +63,7 @@ WristScan is a specialized iOS application designed to catalog and track persona
 * **WatchTimepiece:** The core entity. Stores strings (manufacturer, modelName, referenceNumber, caseMaterial, watchType, waterResistance), numerics (caseSize, lugToLug, lugWidth, timesWorn), dates (lastWornDate, wearHistory array), and the cropped image as a `Data` BLOB.
 * **WatchModification:** A relational entity tracking the component type, modification details, and cost of aftermarket changes.
 * **AccuracyLog:** A relational entity tracking the date checked, resting position, and deviation in seconds (+/-).
+* **WatchCatalogItem:** A separate, pre-loaded reference catalog of known watch models (manufacturer, reference number, aliases like "Pepsi"/"Batman", price tier, etc.), distinct from the user's own collection. This is the lookup target the `WatchScannerView` fuzzy-matches OCR text against.
 * **MonthlyWearLog:** A transient, computed struct used strictly for charting grouped wear data.
 
 ## Naming & File Conventions
@@ -53,7 +79,7 @@ WristScan is a specialized iOS application designed to catalog and track persona
 ## Known Issues & Unfinished Work
 
 * **Epic 3 (Social Sharing):** Pending the creation of a rendering engine to export custom collection metric graphics for social media.
-* **Epic 4 (Data Portability):** Pending the construction of a CSV parser to import historical wear data.
+* **Epic 4 (Data Portability):** CSV *export* is built (`SettingsView`). Still pending: a CSV *parser* to import historical wear data.
 * **Epic 5 (AI Enrichment):** The LLM JSON generation, Read-Through Cache cloud setup, and WatchCharts integration have been architected but not yet coded.
 * **Current Stabilization:** Still verifying if the `.onChange` cache refreshes and the `IsolatedPhotoPickerView` have fully resolved edge-case UI staleness and picker scroll-jumping.
 

@@ -52,6 +52,7 @@ final class WatchTimepiece {
         purchaseDate: Date,
         purchasePrice: Double,
         imageData: Data? = nil,
+        modelName: String? = nil,
         dialColor: String = "",
         lumeType: String = "",
         caseMaterial: String = "",
@@ -74,7 +75,7 @@ final class WatchTimepiece {
         self.timesWorn = 0
         self.modifications = []
         self.imageData = imageData
-        self.modelName = ""
+        self.modelName = modelName ?? name
         self.movementType = ""
         self.movement = ""
         self.notes = ""
