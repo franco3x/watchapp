@@ -107,6 +107,7 @@ Living project tracker, starting from today forward. Already-shipped functionali
 - [ ] Push notifications reminding the user to check/wear a watch
 - [ ] Badge/leveling system
 - [ ] Timegrapher functionality
+- [ ] Ability to share image directly to social media (Instagram, Facebook, X, etc)
 
 ## Things to NOT Change Without Asking
 
