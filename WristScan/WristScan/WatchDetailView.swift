@@ -32,7 +32,7 @@ struct WatchDetailView: View {
     @State private var stableChartData: [MonthlyWearLog] = []
     
     // Cache the decoded image out of the layout loop
-    @State private var heroUIImage: UIImage? = nil
+    @State private var localTimepieceImage: UIImage? = nil
 
     // MARK: - Safe Computed Properties
     private var sortedWearHistory: [Date] {
@@ -55,6 +55,19 @@ struct WatchDetailView: View {
         }
         return grouped.map { MonthlyWearLog(month: $0.key, count: $0.value.count) }
                       .sorted { $0.month < $1.month }
+    }
+
+    private func reloadImage() {
+        if let data = timepiece.imageData {
+            Task {
+                let decoded = await Task.detached(priority: .userInitiated) {
+                    UIImage(data: data)
+                }.value
+                await MainActor.run { self.localTimepieceImage = decoded }
+            }
+        } else {
+            self.localTimepieceImage = nil
+        }
     }
     
     // MARK: - Main Body
@@ -104,13 +117,7 @@ struct WatchDetailView: View {
             stableChartData = getMonthlyWearData()
         }
         .task(id: timepiece.persistentModelID) {
-            if let data = timepiece.imageData {
-                if let decodedImage = UIImage(data: data) {
-                    await MainActor.run {
-                        self.heroUIImage = decodedImage
-                    }
-                }
-            }
+            reloadImage()
         }
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
@@ -138,6 +145,7 @@ struct WatchDetailView: View {
         .onChange(of: activeSheet) { oldValue, newValue in
             if newValue == nil {
                 stableChartData = getMonthlyWearData()
+                reloadImage() // Refresh the cache only when closing a sheet
             }
         }
     }
@@ -145,7 +153,7 @@ struct WatchDetailView: View {
     // MARK: - Extracted Component Views
     @ViewBuilder
     private var heroImageView: some View {
-        if let uiImage = heroUIImage {
+        if let uiImage = localTimepieceImage {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFill()

@@ -11,9 +11,14 @@ import PhotosUI
 
 struct EditWatchView: View {
     @Bindable var timepiece: WatchTimepiece
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
     
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var rawSelectedImage: UIImage? = nil
+    @State private var showCropper: Bool = false
+    @State private var showImageOptions: Bool = false
+    @State private var showPicker: Bool = false
     
     let movementOptions = ["Automatic", "Manual", "Quartz", "Solar", "Spring Drive", "Mecha-Quartz"]
     
@@ -29,37 +34,33 @@ struct EditWatchView: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.amberGold)
             ) {
-                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                    if let data = timepiece.imageData, let uiImage = UIImage(data: data) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 200)
-                            .frame(maxWidth: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .contentShape(Rectangle())
-                    } else {
-                        HStack(spacing: 12) {
-                            Spacer()
-                            Image(systemName: "photo.on.rectangle")
-                                .font(.system(size: 16))
-                                .foregroundColor(.amberGold)
-                            Text("Add Photo")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(.amberGold)
-                            Spacer()
-                        }
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
-                    }
-                }
-                .buttonStyle(.plain)
+                IsolatedPhotoPickerView(
+                    hasExistingImage: timepiece.imageData != nil,
+                    selection: $selectedPhotoItem,
+                    showPicker: $showPicker,
+                    showImageOptions: $showImageOptions
+                )
                 .listRowBackground(Color(red: 0.12, green: 0.12, blue: 0.14))
-                .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    guard let newItem else { return }
+                    
                     Task {
-                        if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                            if let uiImage = UIImage(data: data), let compressedData = uiImage.jpegData(compressionQuality: 0.8) {
-                                timepiece.imageData = compressedData
+                        // Load raw data
+                        if let data = try? await newItem.loadTransferable(type: Data.self) {
+                            
+                            // Move completely off the main thread to decode the massive image
+                            let decodedImage = await Task.detached(priority: .userInitiated) {
+                                UIImage(data: data)
+                            }.value
+                            
+                            // Hop back to the main thread to update UI state
+                            await MainActor.run {
+                                if let decodedImage {
+                                    self.rawSelectedImage = decodedImage
+                                    self.showCropper = true
+                                }
+                                // Clear so the same image can be re-picked if needed
+                                self.selectedPhotoItem = nil
                             }
                         }
                     }
@@ -298,6 +299,89 @@ struct EditWatchView: View {
                 .foregroundColor(.amberGold)
             }
         }
+        .confirmationDialog("Watch Photo", isPresented: $showImageOptions, titleVisibility: .visible) {
+            Button("Adjust Current Photo") {
+                if let data = timepiece.imageData, let currentImage = UIImage(data: data) {
+                    rawSelectedImage = currentImage
+                    showCropper = true
+                }
+            }
+            Button("Choose New Photo") {
+                showPicker = true
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .fullScreenCover(isPresented: $showCropper) {
+            if let rawImage = rawSelectedImage {
+                ImageAdjusterView(originalImage: rawImage) { croppedImage in
+                    if let finalData = croppedImage?.jpegData(compressionQuality: 0.8) {
+                        // Write the flattened, cropped data to the database
+                        timepiece.imageData = finalData
+                        // Force SwiftData to notify parent views of the change
+                        try? modelContext.save()
+                    }
+                    rawSelectedImage = nil
+                    showCropper = false
+                } onCancel: {
+                    rawSelectedImage = nil
+                    showCropper = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Isolated Photo Picker
+// Strict isolation: receives only primitive bindings, no SwiftData model.
+// Prevents EditWatchView redraws (triggered by timepiece changes) from
+// corrupting the PhotosPicker's internal scroll position.
+struct IsolatedPhotoPickerView: View {
+    let hasExistingImage: Bool
+    @Binding var selection: PhotosPickerItem?
+    @Binding var showPicker: Bool
+    @Binding var showImageOptions: Bool
+    
+    var body: some View {
+        Button {
+            if hasExistingImage {
+                showImageOptions = true
+            } else {
+                showPicker = true
+            }
+        } label: {
+            // Note: label shows the placeholder only — image preview is rendered
+            // by the parent which owns timepiece. This view is intentionally
+            // ignorant of imageData to avoid being redrawn on model changes.
+            if hasExistingImage {
+                HStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "photo.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.amberGold)
+                    Text("Change Photo")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.amberGold)
+                    Spacer()
+                }
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            } else {
+                HStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.system(size: 16))
+                        .foregroundColor(.amberGold)
+                    Text("Add Photo")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.amberGold)
+                    Spacer()
+                }
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+        }
+        .buttonStyle(.plain)
+        .photosPicker(isPresented: $showPicker, selection: $selection, matching: .images)
     }
 }
 
