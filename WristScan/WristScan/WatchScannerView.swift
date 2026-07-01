@@ -324,14 +324,20 @@ struct WatchScannerView: View {
     @State private var capturedImageData: Data? = nil
     @State private var pendingReviewWatch: WatchTimepiece?
     @State private var didSaveReviewWatch = false
+    @State private var consecutiveFailureCount = 0
 
     private let cutoutDiameter: CGFloat = 260
+
+    /// After this many consecutive failed scans, skip the retry screen and
+    /// drop the user straight into manual entry.
+    private let maxConsecutiveFailures = 2
 
     enum ScanPhase {
         case ready
         case capturing
         case recognizing
         case failed(String)
+        case redirectingToManualEntry
     }
 
     var body: some View {
@@ -386,6 +392,7 @@ struct WatchScannerView: View {
         .ignoresSafeArea()
         .onAppear {
             isSuccessLocked = false
+            consecutiveFailureCount = 0
             camera.start()
             camera.onCapture = handleScanResult
         }
@@ -448,6 +455,12 @@ struct WatchScannerView: View {
                 .foregroundColor(.red.opacity(0.85))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
+        case .redirectingToManualEntry:
+            Text("Having trouble scanning — let's enter it by hand")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(.amberGold.opacity(0.9))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
         }
     }
 
@@ -502,6 +515,9 @@ struct WatchScannerView: View {
                 }
             }
             .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        case .redirectingToManualEntry:
+            ProcessingPill(label: "Opening manual entry…")
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
         }
     }
 
@@ -515,7 +531,26 @@ struct WatchScannerView: View {
         camera.capturePhoto()
     }
 
+    /// Called whenever a scan comes back unsuccessful, for either reason
+    /// (unreadable dial text, or no catalog match). After `maxConsecutiveFailures`
+    /// in a row, skips the normal retry screen and drops the user into manual entry.
+    private func handleScanFailure(_ message: String) {
+        consecutiveFailureCount += 1
+        isProcessing = false
+
+        if consecutiveFailureCount >= maxConsecutiveFailures {
+            withAnimation { scanPhase = .redirectingToManualEntry }
+            Task {
+                try? await Task.sleep(nanoseconds: 1_200_000_000)   // 1.2 s to let the message register
+                handleManualEntry()
+            }
+        } else {
+            withAnimation { scanPhase = .failed(message) }
+        }
+    }
+
     private func saveAndSuccess(item: WatchCatalogItem, imageData: Data?) {
+        consecutiveFailureCount = 0
         let timepiece = WatchTimepiece(
             manufacturer:    item.manufacturer,
             name:            item.modelName,
@@ -549,10 +584,7 @@ struct WatchScannerView: View {
         withAnimation { scanPhase = .recognizing }
 
         guard !lines.isEmpty else {
-            withAnimation {
-                scanPhase = .failed("Could not read dial text.\nTry better lighting or move closer.")
-                isProcessing = false
-            }
+            handleScanFailure("Could not read dial text.\nTry better lighting or move closer.")
             return
         }
 
@@ -573,10 +605,7 @@ struct WatchScannerView: View {
             }
 
             if matches.isEmpty {
-                withAnimation {
-                    scanPhase = .failed("No catalog match found.\nTry better lighting or move closer.")
-                    isProcessing = false
-                }
+                handleScanFailure("No catalog match found.\nTry better lighting or move closer.")
                 return
             }
 
@@ -638,6 +667,10 @@ struct WatchScannerView: View {
         if didSaveReviewWatch, let watch = reviewWatch {
             showingScanner = false
             onWatchSaved?(watch)
+        } else {
+            // Cancelled out of the review sheet — return to a scannable state
+            // rather than leaving the "Opening manual entry…" message stuck on screen.
+            resetToReady()
         }
         didSaveReviewWatch = false
     }
@@ -653,6 +686,7 @@ private extension WatchScannerView.ScanPhase {
         case .capturing: return 1
         case .recognizing: return 2
         case .failed: return 3
+        case .redirectingToManualEntry: return 4
         }
     }
 }
