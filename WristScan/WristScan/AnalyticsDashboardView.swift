@@ -34,6 +34,8 @@ struct AnalyticsDashboardView: View {
     @State private var selectedFrequencyPeriod: ReportPeriod = .allTime
     @State private var selectedCalendarDate: SheetDate? = nil
     @State private var selectedWatchesForLog: Set<WatchTimepiece> = []
+    @State private var distributionShareCoordinator = ShareCardCoordinator()
+    @State private var wearChartShareCoordinator = ShareCardCoordinator()
 
     // MARK: - Computed Metrics
 
@@ -167,6 +169,26 @@ struct AnalyticsDashboardView: View {
                 }
             }
         }
+        .shareCardPresentation(distributionShareCoordinator)
+        .shareCardPresentation(wearChartShareCoordinator)
+    }
+
+    private func shareDistributionChart() async {
+        let card = DistributionShareCard(
+            metricLabel: "By \(selectedDistribution.rawValue)",
+            distribution: dynamicDistribution,
+            sectorColors: sectorColors
+        )
+        await distributionShareCoordinator.prepareAndShare(card: card, exportSize: CGSize(width: 1080, height: 1350), filenamePrefix: "WristScan_Distribution")
+    }
+
+    private func shareWearChart() async {
+        let card = WearChartShareCard(
+            metricLabel: "By \(selectedFrequencyMetric.rawValue)",
+            periodLabel: selectedFrequencyPeriod.rawValue,
+            distribution: frequencyDistribution
+        )
+        await wearChartShareCoordinator.prepareAndShare(card: card, exportSize: CGSize(width: 1080, height: 1350), filenamePrefix: "WristScan_WearChart")
     }
 
     // MARK: - Subviews
@@ -245,7 +267,22 @@ struct AnalyticsDashboardView: View {
 
     private var distributionChart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Collection Distribution")
+            HStack {
+                sectionHeader("Collection Distribution")
+                Spacer()
+                Button(action: { Task { await shareDistributionChart() } }) {
+                    if distributionShareCoordinator.isPreparing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.amberGold)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                    }
+                }
+                .disabled(dynamicDistribution.isEmpty || distributionShareCoordinator.isPreparing)
+            }
 
             Menu {
                 // "Individual Watch" is excluded here — every watch is its own
@@ -329,7 +366,22 @@ struct AnalyticsDashboardView: View {
 
     private var wearChart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Top 5 Wrist Checks")
+            HStack {
+                sectionHeader("Top 5 Wrist Checks")
+                Spacer()
+                Button(action: { Task { await shareWearChart() } }) {
+                    if wearChartShareCoordinator.isPreparing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.amberGold)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                    }
+                }
+                .disabled(frequencyDistribution.isEmpty || wearChartShareCoordinator.isPreparing)
+            }
 
             HStack(spacing: 10) {
                 Menu {
@@ -554,6 +606,117 @@ struct AnalyticsDashboardView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
             )
+    }
+}
+
+private struct DistributionShareCard: View {
+    let metricLabel: String
+    let distribution: [(category: String, count: Int)]
+    let sectorColors: [Color]
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.07, green: 0.07, blue: 0.08)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("WristScan Insights")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+
+                    Text("Collection Distribution — \(metricLabel)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                }
+
+                Chart(distribution, id: \.category) { item in
+                    SectorMark(
+                        angle: .value("Count", item.count),
+                        innerRadius: .ratio(0.55),
+                        angularInset: 2
+                    )
+                    .foregroundStyle(by: .value("Category", item.category))
+                    .cornerRadius(4)
+                }
+                .frame(height: 420)
+                .chartLegend(position: .bottom, alignment: .center, spacing: 12)
+                .chartForegroundStyleScale(
+                    domain: distribution.map(\.category),
+                    range: Array(sectorColors.prefix(distribution.count))
+                )
+
+                VStack(spacing: 8) {
+                    ForEach(distribution.prefix(6), id: \.category) { item in
+                        HStack {
+                            Text(item.category.uppercased())
+                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.white.opacity(0.8))
+                                .tracking(1.0)
+                            Spacer()
+                            Text("\(item.count) watch\(item.count == 1 ? "" : "es")")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                        if item.category != distribution.prefix(6).last?.category {
+                            Divider().background(Color.white.opacity(0.08))
+                        }
+                    }
+                }
+
+                Text("Captured with WristScan")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+            .padding(28)
+        }
+    }
+}
+
+private struct WearChartShareCard: View {
+    let metricLabel: String
+    let periodLabel: String
+    let distribution: [(category: String, count: Int)]
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.07, green: 0.07, blue: 0.08)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("WristScan Insights")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+
+                    Text("Top 5 Wrist Checks — \(metricLabel) · \(periodLabel)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                }
+
+                Chart(distribution, id: \.category) { item in
+                    BarMark(
+                        x: .value("Category", item.category),
+                        y: .value("Count", item.count)
+                    )
+                    .foregroundStyle(Color.amberGold.gradient)
+                    .cornerRadius(6)
+                }
+                .frame(height: 420)
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { _ in
+                        AxisValueLabel(orientation: .verticalReversed)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.6))
+                    }
+                }
+
+                Text("Captured with WristScan")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+            .padding(28)
+        }
     }
 }
 

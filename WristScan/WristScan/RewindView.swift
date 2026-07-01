@@ -1,22 +1,15 @@
 import SwiftUI
 import SwiftData
 import UIKit
-import Photos
 
 struct RewindView: View {
     @Query private var timepieces: [WatchTimepiece]
     @State private var selectedPeriod: ReportPeriod = .lastYear
 
     @State private var engine = RewindEngine()
+    @State private var shareCoordinator = ShareCardCoordinator()
 
     @State private var cachedWinnerImage: UIImage? = nil
-    @State private var shareImage: UIImage? = nil
-    @State private var shareURL: URL? = nil
-    @State private var isPreparingShare = false
-    @State private var isSavingToPhotos = false
-    @State private var showSharePreview = false
-    @State private var shareFeedback: ShareFeedback? = nil
-    @State private var sharePrepError: String? = nil
 
     var body: some View {
         NavigationStack {
@@ -132,10 +125,10 @@ struct RewindView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         Task {
-                            await prepareAndShareReport()
+                            await shareRewindReport()
                         }
                     }) {
-                        if isPreparingShare {
+                        if shareCoordinator.isPreparing {
                             ProgressView()
                                 .progressViewStyle(.circular)
                                 .tint(.amberGold)
@@ -145,38 +138,10 @@ struct RewindView: View {
                                 .foregroundColor(.amberGold)
                         }
                     }
-                    .disabled(engine.metrics == nil || isPreparingShare || engine.isCalculating)
+                    .disabled(engine.metrics == nil || shareCoordinator.isPreparing || engine.isCalculating)
                 }
             }
-            .sheet(isPresented: $showSharePreview, onDismiss: {
-                cleanupShareTempFile(url: shareURL)
-                shareImage = nil
-                shareURL = nil
-                isSavingToPhotos = false
-                shareFeedback = nil
-            }) {
-                if let image = shareImage {
-                    SharePreviewSheet(image: image, shareURL: shareURL, isSaving: isSavingToPhotos, feedback: $shareFeedback, onSave: {
-                        isSavingToPhotos = true
-                        saveImageToPhotos(image) { err in
-                            isSavingToPhotos = false
-                            if let err {
-                                shareFeedback = .failure(err)
-                            } else {
-                                shareFeedback = .success("Saved to Photos")
-                            }
-                        }
-                    })
-                }
-            }
-            .alert("Share issue", isPresented: Binding(
-                get: { sharePrepError != nil },
-                set: { _ in sharePrepError = nil }
-            )) {
-                Button("OK") {}
-            } message: {
-                Text(sharePrepError ?? "")
-            }
+            .shareCardPresentation(shareCoordinator)
             .task(id: selectedPeriod) {
                 let dateRange = selectedPeriod.dateRange
                 await engine.generateReport(for: timepieces, start: dateRange.start, end: dateRange.end)
@@ -193,57 +158,21 @@ struct RewindView: View {
         }
     }
 
-    private func prepareAndShareReport() async {
+    private func shareRewindReport() async {
         guard let metrics = engine.metrics else {
-            await MainActor.run {
-                sharePrepError = "The report is still loading."
-            }
+            shareCoordinator.prepError = "The report is still loading."
             return
         }
 
-        await MainActor.run {
-            isPreparingShare = true
-            sharePrepError = nil
-        }
-
-        let image = await MainActor.run {
-            let exportView = RewindShareCard(
-                periodLabel: selectedPeriod.rawValue,
-                metrics: metrics,
-                winningWatchManufacturer: engine.winningWatchManufacturer,
-                winningWatchModelName: engine.winningWatchModelName,
-                winningWatchImage: cachedWinnerImage,
-                favoriteBrand: metrics.favoriteBrand?.name
-            )
-            .frame(width: 1080, height: 1350)
-
-            let renderer = ImageRenderer(content: exportView)
-            renderer.scale = UIScreen.main.scale
-            return renderer.uiImage
-        }
-
-        await MainActor.run {
-            isPreparingShare = false
-            if let image, let url = makeShareURL(from: image) {
-                shareImage = image
-                shareURL = url
-                showSharePreview = true
-            } else {
-                sharePrepError = "Unable to create the share snapshot right now."
-            }
-        }
-    }
-}
-
-private enum ShareFeedback: Identifiable, Equatable {
-    case success(String)
-    case failure(String)
-
-    var id: String {
-        switch self {
-        case .success: return "success"
-        case .failure: return "failure"
-        }
+        let card = RewindShareCard(
+            periodLabel: selectedPeriod.rawValue,
+            metrics: metrics,
+            winningWatchManufacturer: engine.winningWatchManufacturer,
+            winningWatchModelName: engine.winningWatchModelName,
+            winningWatchImage: cachedWinnerImage,
+            favoriteBrand: metrics.favoriteBrand?.name
+        )
+        await shareCoordinator.prepareAndShare(card: card, exportSize: CGSize(width: 1080, height: 1350), filenamePrefix: "WristScan_Rewind")
     }
 }
 
@@ -345,168 +274,6 @@ private struct RewindShareCard: View {
             .padding(28)
         }
     }
-}
-
-private struct SharePreviewSheet: View {
-    let image: UIImage
-    let shareURL: URL?
-    let isSaving: Bool
-    @Binding var feedback: ShareFeedback?
-    let onSave: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var hasSaved = false
-    @State private var showActivitySheet = false
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.07, green: 0.07, blue: 0.08)
-                    .ignoresSafeArea()
-
-                VStack(spacing: 20) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 8)
-
-                    VStack(spacing: 8) {
-                        Text("Ready to share")
-                            .font(.headline)
-                            .foregroundColor(.white)
-
-                        Text("This snapshot uses your current Rewind data and can be shared instantly.")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    Button(action: { showActivitySheet = true }) {
-                        HStack {
-                            Spacer()
-                            Label("Share Snapshot", systemImage: "square.and.arrow.up")
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                        .padding(.vertical, 14)
-                        .background(Color.amberGold.opacity(0.16))
-                        .foregroundColor(.amberGold)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(.plain)
-                    Button(action: onSave) {
-                        HStack {
-                            Spacer()
-                            if isSaving {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.white)
-                            } else if hasSaved {
-                                Label("Saved to Photos", systemImage: "checkmark")
-                                    .fontWeight(.semibold)
-                            } else {
-                                Label("Save to Photos", systemImage: "square.and.arrow.down")
-                                    .fontWeight(.semibold)
-                            }
-                            Spacer()
-                        }
-                        .padding(.vertical, 14)
-                        .background(Color.white.opacity(0.06))
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isSaving || hasSaved)
-                }
-                .padding(20)
-            }
-            .navigationTitle("Preview")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(.amberGold)
-                }
-            }
-            .alert(item: $feedback) { feedback in
-                switch feedback {
-                case .success(let message):
-                    Alert(title: Text("Saved"), message: Text(message), dismissButton: .default(Text("OK")))
-                case .failure(let message):
-                    Alert(title: Text("Share issue"), message: Text(message), dismissButton: .default(Text("OK")))
-                }
-            }
-            .onChange(of: feedback) { _, newValue in
-                if case .success = newValue {
-                    hasSaved = true
-                }
-            }
-            .sheet(isPresented: $showActivitySheet) {
-                let items: [Any] = shareURL.map { [$0] } ?? [image]
-                ActivityViewController(activityItems: items)
-            }
-        }
-    }
-}
-
-private func makeShareURL(from image: UIImage) -> URL? {
-    guard let data = image.jpegData(compressionQuality: 0.9) else { return nil }
-    let tempDir = FileManager.default.temporaryDirectory
-    let filename = "WristScan_Rewind_\(UUID().uuidString).jpg"
-    let url = tempDir.appendingPathComponent(filename)
-    do {
-        try data.write(to: url, options: .atomic)
-        return url
-    } catch {
-        print("[RewindView] Failed to write share image: \(error)")
-        return nil
-    }
-}
-
-private func cleanupShareTempFile(url: URL?) {
-    guard let url = url else { return }
-    try? FileManager.default.removeItem(at: url)
-}
-
-private func saveImageToPhotos(_ image: UIImage, completion: @escaping (String?) -> Void) {
-    // Request permission and save using Photos framework
-    PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-        switch status {
-        case .authorized, .limited:
-            PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.creationRequestForAsset(from: image)
-            } completionHandler: { success, error in
-                DispatchQueue.main.async {
-                    if success {
-                        completion(nil)
-                    } else {
-                        completion(error?.localizedDescription ?? "Failed to save image to Photos.")
-                    }
-                }
-            }
-        case .denied, .restricted, .notDetermined:
-            DispatchQueue.main.async {
-                completion("Photos permission not granted.")
-            }
-        @unknown default:
-            DispatchQueue.main.async {
-                completion("Unable to access Photos.")
-            }
-        }
-    }
-}
-
-private struct ActivityViewController: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    let applicationActivities: [UIActivity]? = nil
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 private struct ShareMetricPill: View {

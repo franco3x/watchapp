@@ -30,7 +30,8 @@ struct WatchDetailView: View {
     @State private var hasAutoPresented = false
     @State private var selectedTab: String = "Overview"
     @State private var stableChartData: [MonthlyWearLog] = []
-    
+    @State private var shareCoordinator = ShareCardCoordinator()
+
     // Cache the decoded image out of the layout loop
     @State private var localTimepieceImage: UIImage? = nil
 
@@ -69,7 +70,26 @@ struct WatchDetailView: View {
             self.localTimepieceImage = nil
         }
     }
-    
+
+    private func shareWatchCard() async {
+        let card = WatchDetailShareCard(
+            manufacturer: timepiece.manufacturer,
+            modelName: timepiece.modelName,
+            referenceNumber: timepiece.referenceNumber,
+            heroImage: localTimepieceImage,
+            caseMaterial: timepiece.caseMaterial,
+            caseSize: timepiece.caseSize,
+            lugToLug: timepiece.lugToLug,
+            lugWidth: timepiece.lugWidth,
+            waterResistance: timepiece.waterResistance,
+            watchType: timepiece.watchType,
+            timesWorn: timepiece.timesWorn,
+            lastWornDate: timepiece.lastWornDate,
+            chartData: stableChartData
+        )
+        await shareCoordinator.prepareAndShare(card: card, exportSize: CGSize(width: 1080, height: 1600), filenamePrefix: "WristScan_Watch")
+    }
+
     // MARK: - Main Body
     var body: some View {
         ScrollView {
@@ -123,12 +143,30 @@ struct WatchDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    Task {
+                        await shareWatchCard()
+                    }
+                }) {
+                    if shareCoordinator.isPreparing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.amberGold)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(.amberGold)
+                    }
+                }
+                .disabled(shareCoordinator.isPreparing)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") {
                     activeSheet = .edit
                 }
                 .foregroundColor(.amberGold)
             }
         }
+        .shareCardPresentation(shareCoordinator)
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .edit:
@@ -520,7 +558,7 @@ struct MetricCard: View {
 struct SpecRow: View {
     let label: String
     let value: String
-    
+
     var body: some View {
         HStack {
             Text(label)
@@ -533,6 +571,127 @@ struct SpecRow: View {
                 .foregroundColor(.white)
         }
         .padding(.vertical, 8)
+    }
+}
+
+private struct WatchDetailShareCard: View {
+    let manufacturer: String
+    let modelName: String
+    let referenceNumber: String
+    let heroImage: UIImage?
+    let caseMaterial: String
+    let caseSize: Double
+    let lugToLug: Double
+    let lugWidth: Double
+    let waterResistance: String
+    let watchType: String
+    let timesWorn: Int
+    let lastWornDate: Date?
+    let chartData: [MonthlyWearLog]
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.07, green: 0.07, blue: 0.08)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text((manufacturer.isEmpty ? "Unknown Manufacturer" : manufacturer).uppercased())
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(.amberGold)
+                        .tracking(1.5)
+
+                    Text(modelName.isEmpty ? "New Watch" : modelName)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+
+                    Text(referenceNumber.isEmpty ? "—" : referenceNumber)
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray)
+                }
+
+                if let heroImage {
+                    Image(uiImage: heroImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 420)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color(red: 0.16, green: 0.16, blue: 0.19))
+                        Image(systemName: "clock")
+                            .font(.system(size: 60))
+                            .foregroundColor(.amberGold.opacity(0.3))
+                    }
+                    .frame(height: 420)
+                }
+
+                VStack(spacing: 0) {
+                    SpecRow(label: "Case Material", value: caseMaterial)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Case Size", value: caseSize > 0 ? "\(caseSize.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Lug to Lug", value: lugToLug > 0 ? "\(lugToLug.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Lug Width", value: lugWidth > 0 ? "\(lugWidth.formatted()) mm" : "—")
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Water Resistance", value: waterResistance)
+                    Divider().background(Color.white.opacity(0.1))
+                    SpecRow(label: "Watch Type", value: watchType)
+                }
+                .padding(14)
+                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                .cornerRadius(12)
+
+                if !chartData.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("WEAR FREQUENCY")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(.amberGold)
+                            .tracking(1.2)
+
+                        Chart(chartData) { item in
+                            BarMark(
+                                x: .value("Month", item.month, unit: .month),
+                                y: .value("Wears", item.count)
+                            )
+                            .foregroundStyle(Color.amberGold.gradient)
+                        }
+                        .frame(height: 160)
+                    }
+                }
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("TIMES WORN")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(.amberGold)
+                            .tracking(1.0)
+                        Text("\(timesWorn)")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("LAST WORN")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(.amberGold)
+                            .tracking(1.0)
+                        Text(lastWornDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Unworn")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+
+                Text("Captured with WristScan")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+            .padding(28)
+        }
     }
 }
 
