@@ -243,7 +243,10 @@ struct AnalyticsDashboardView: View {
             sectionHeader("Collection Distribution")
 
             Menu {
-                ForEach(DistributionMetric.allCases, id: \.self) { metric in
+                // "Individual Watch" is excluded here — every watch is its own
+                // category, so the distribution is always 1 per slice, which isn't
+                // a meaningful breakdown for a pie chart.
+                ForEach(DistributionMetric.allCases.filter { $0 != .watch }, id: \.self) { metric in
                     Button(action: { selectedDistribution = metric }) {
                         HStack {
                             Text(metric.rawValue)
