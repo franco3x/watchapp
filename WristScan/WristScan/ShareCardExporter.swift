@@ -278,3 +278,68 @@ struct ActivityViewController: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
+/// Dark radial-gradient canvas background shared by the redesigned share cards.
+struct ShareCardBackground: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0.07, green: 0.07, blue: 0.08)
+
+            RadialGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color(red: 0.098, green: 0.098, blue: 0.125), location: 0),
+                    .init(color: Color(red: 0.075, green: 0.075, blue: 0.09), location: 0.46),
+                    .init(color: Color(red: 0.059, green: 0.059, blue: 0.071), location: 1.0)
+                ]),
+                center: UnitPoint(x: 0.5, y: 0.08),
+                startRadius: 0,
+                endRadius: 1300
+            )
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// The amber capsule pill (glowing dot + uppercased label) used in the Rewind and
+/// Top Wrist Checks card headers to show the current report period.
+struct SharePeriodPill: View {
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(Color.amberGold)
+                .frame(width: 7, height: 7)
+                .shadow(color: .amberGold.opacity(0.7), radius: 5)
+
+            Text(label)
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .tracking(2)
+                .foregroundColor(.amberGold)
+        }
+        .padding(.vertical, 11)
+        .padding(.horizontal, 20)
+        .background(
+            Capsule()
+                .fill(Color.amberGold.opacity(0.07))
+                .overlay(Capsule().stroke(Color.amberGold.opacity(0.38), lineWidth: 1))
+        )
+    }
+}
+
+/// The small stroked-circle-and-hand "watch mark" glyph used in every share card's footer,
+/// next to "Captured with WristScan" — drawn with primitives, no image asset.
+struct ShareCardWatermark: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.amberGold, lineWidth: 2)
+                .frame(width: 22, height: 22)
+
+            Capsule()
+                .fill(Color.amberGold)
+                .frame(width: 2, height: 6)
+                .offset(y: -3)
+        }
+    }
+}

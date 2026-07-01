@@ -183,11 +183,16 @@ struct AnalyticsDashboardView: View {
     }
 
     private func shareWearChart() async {
-        let card = WearChartShareCard(
-            metricLabel: "By \(selectedFrequencyMetric.rawValue)",
-            periodLabel: selectedFrequencyPeriod.rawValue,
-            distribution: frequencyDistribution
-        )
+        let entries = frequencyDistribution.map { item -> LeaderboardEntry in
+            let secondary: String?
+            if selectedFrequencyMetric == .watch {
+                secondary = timepieces.first(where: { $0.name == item.category })?.manufacturer
+            } else {
+                secondary = nil
+            }
+            return LeaderboardEntry(name: item.category, secondary: secondary, count: item.count)
+        }
+        let card = WearChartShareCard(periodLabel: selectedFrequencyPeriod.rawValue, entries: entries)
         await wearChartShareCoordinator.prepareAndShare(card: card, exportSize: CGSize(width: 1080, height: 1350), filenamePrefix: "WristScan_WearChart")
     }
 
@@ -673,49 +678,202 @@ private struct DistributionShareCard: View {
     }
 }
 
+private struct LeaderboardEntry {
+    let name: String
+    let secondary: String?
+    let count: Int
+}
+
 private struct WearChartShareCard: View {
-    let metricLabel: String
     let periodLabel: String
-    let distribution: [(category: String, count: Int)]
+    let entries: [LeaderboardEntry]
+
+    private var maxCount: Int {
+        entries.map(\.count).max() ?? 1
+    }
+
+    private var totalCount: Int {
+        entries.reduce(0) { $0 + $1.count }
+    }
 
     var body: some View {
         ZStack {
-            Color(red: 0.07, green: 0.07, blue: 0.08)
-                .ignoresSafeArea()
+            ShareCardBackground()
 
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("WristScan Insights")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 0) {
+                header
+
+                leaderboardCard
+                    .padding(.top, 40)
+                    .frame(maxHeight: .infinity)
+
+                footer
+                    .padding(.top, 30)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 72)
+            .padding(.top, 64)
+            .padding(.bottom, 56)
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("WRISTSCAN INSIGHTS")
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .tracking(3.5)
+                    .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+
+                Text("Top Wrist Checks")
+                    .font(.system(size: 50, weight: .heavy, design: .rounded))
+                    .tracking(-0.8)
+                    .foregroundColor(.white)
+            }
+
+            Spacer()
+
+            SharePeriodPill(label: periodLabel.uppercased())
+                .padding(.top, 6)
+        }
+    }
+
+    private var leaderboardCard: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                LeaderboardRow(
+                    rank: index + 1,
+                    name: entry.name,
+                    secondary: entry.secondary?.uppercased(),
+                    count: entry.count,
+                    maxCount: maxCount,
+                    showsDivider: index != entries.count - 1
+                )
+                if index != entries.count - 1 {
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 20)
+        .padding(.horizontal, 44)
+        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 30, y: 30)
+    }
+
+    private var footer: some View {
+        HStack {
+            HStack(spacing: 12) {
+                ShareCardWatermark()
+                Text("CAPTURED WITH WRISTSCAN")
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundColor(Color(red: 0.435, green: 0.435, blue: 0.467))
+            }
+
+            Spacer()
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("TOTAL")
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .tracking(1.5)
+                    .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+                Text("\(totalCount)")
+                    .font(.system(size: 24, weight: .heavy))
+                    .foregroundColor(.amberGold)
+                Text("CHECKS")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+            }
+        }
+    }
+}
+
+private struct LeaderboardRow: View {
+    let rank: Int
+    let name: String
+    let secondary: String?
+    let count: Int
+    let maxCount: Int
+    let showsDivider: Bool
+
+    private var rankColor: Color {
+        rank == 1 ? .amberGold : Color(red: 0.333, green: 0.333, blue: 0.364)
+    }
+
+    private var barFill: AnyShapeStyle {
+        switch rank {
+        case 1:
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [Color(red: 0.659, green: 0.494, blue: 0.247), Color(red: 0.94, green: 0.824, blue: 0.604)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+        case 2: return AnyShapeStyle(Color.amberGold)
+        case 3: return AnyShapeStyle(Color(red: 0.784, green: 0.604, blue: 0.325))
+        case 4: return AnyShapeStyle(Color(red: 0.690, green: 0.525, blue: 0.247))
+        default: return AnyShapeStyle(Color(red: 0.561, green: 0.427, blue: 0.204))
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 30) {
+            Text("\(rank)")
+                .font(.system(size: 52, weight: .black, design: .rounded))
+                .foregroundColor(rankColor)
+                .frame(width: 62, alignment: .leading)
+                .shadow(color: rank == 1 ? Color.amberGold.opacity(0.4) : .clear, radius: 12)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    Text(name)
+                        .font(.system(size: 30, weight: .heavy))
                         .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
 
-                    Text("Top 5 Wrist Checks — \(metricLabel) · \(periodLabel)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                }
-
-                Chart(distribution, id: \.category) { item in
-                    BarMark(
-                        x: .value("Category", item.category),
-                        y: .value("Count", item.count)
-                    )
-                    .foregroundStyle(Color.amberGold.gradient)
-                    .cornerRadius(6)
-                }
-                .frame(height: 420)
-                .chartXAxis {
-                    AxisMarks(values: .automatic) { _ in
-                        AxisValueLabel(orientation: .verticalReversed)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.6))
+                    if let secondary {
+                        Text(secondary)
+                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+                            .lineLimit(1)
                     }
                 }
 
-                Text("Captured with WristScan")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.8))
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.05))
+                        Capsule()
+                            .fill(barFill)
+                            .frame(width: geo.size.width * CGFloat(count) / CGFloat(max(maxCount, 1)))
+                            .shadow(color: rank == 1 ? Color.amberGold.opacity(0.5) : .clear, radius: 9)
+                    }
+                }
+                .frame(height: 14)
             }
-            .padding(28)
+
+            Text("\(count)")
+                .font(.system(size: 44, weight: .heavy))
+                .foregroundColor(.white)
+                .frame(width: 110, alignment: .trailing)
+        }
+        .padding(.vertical, 22)
+        .overlay(alignment: .bottom) {
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 1)
+            }
         }
     }
 }

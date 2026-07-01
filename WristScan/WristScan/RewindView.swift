@@ -184,117 +184,302 @@ private struct RewindShareCard: View {
     let winningWatchImage: UIImage?
     let favoriteBrand: String?
 
+    private var hasWinner: Bool {
+        !winningWatchManufacturer.isEmpty || !winningWatchModelName.isEmpty
+    }
+
     var body: some View {
         ZStack {
-            Color(red: 0.07, green: 0.07, blue: 0.08)
-                .ignoresSafeArea()
+            ShareCardBackground()
 
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("WristScan Rewind")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 0) {
+                header
 
-                    Text("Collection insight for \(periodLabel)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                }
+                heroSection
+                    .padding(.top, 36)
 
-                if !winningWatchManufacturer.isEmpty || !winningWatchModelName.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Most Worn Watch")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundColor(.amberGold)
-                            .tracking(1.2)
+                Spacer(minLength: 24)
 
-                        RoundedRectangle(cornerRadius: 22)
-                            .fill(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .overlay(
-                                VStack(alignment: .leading, spacing: 14) {
-                                    if let image = winningWatchImage {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(height: 240)
-                                            .frame(maxWidth: .infinity)
-                                            .clipShape(RoundedRectangle(cornerRadius: 18))
-                                    } else {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 18)
-                                                .fill(Color(red: 0.16, green: 0.16, blue: 0.19))
-                                            Image(systemName: "clock")
-                                                .font(.system(size: 40))
-                                                .foregroundColor(.amberGold.opacity(0.3))
-                                        }
-                                        .frame(height: 240)
-                                    }
+                statSection
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(winningWatchManufacturer.uppercased())
-                                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                            .foregroundColor(.gray)
-                                            .tracking(1.1)
-
-                                        Text(winningWatchModelName.isEmpty ? "No winner yet" : winningWatchModelName)
-                                            .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .lineLimit(2)
-
-                                        Text("\(metrics.mostWornCount) wrist checks")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.amberGold)
-                                    }
-                                }
-                                .padding(16)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 22))
-                    }
-                }
-
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        ShareMetricPill(title: "Total Wears", value: "\(metrics.totalWristChecks)")
-                        ShareMetricPill(title: "Longest Streak", value: "\(metrics.longestWearStreak) days")
-                    }
-
-                    HStack(spacing: 12) {
-                        ShareMetricPill(title: "Watches Worn", value: "\(metrics.distinctWatchesWorn)")
-                        if let favoriteBrand, !favoriteBrand.isEmpty {
-                            ShareMetricPill(title: "Top Brand", value: favoriteBrand)
-                        } else {
-                            ShareMetricPill(title: "Top Brand", value: "—")
-                        }
-                    }
-                }
-
-                Text("Captured with WristScan")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.8))
+                footer
+                    .padding(.top, 34)
             }
-            .padding(28)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 72)
+            .padding(.top, 64)
+            .padding(.bottom, 56)
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("COLLECTION INSIGHT")
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .tracking(3.5)
+                    .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+
+                Text("WristScan Rewind")
+                    .font(.system(size: 50, weight: .heavy, design: .rounded))
+                    .tracking(-0.8)
+                    .foregroundColor(.white)
+            }
+
+            Spacer()
+
+            SharePeriodPill(label: periodLabel.uppercased())
+                .padding(.top, 6)
+        }
+    }
+
+    private var heroSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("MOST WORN WATCH")
+                .font(.system(size: 27, weight: .bold, design: .monospaced))
+                .tracking(4)
+                .foregroundColor(.amberGold)
+
+            if hasWinner {
+                RewindFeaturedCard(
+                    manufacturer: winningWatchManufacturer,
+                    modelName: winningWatchModelName,
+                    image: winningWatchImage,
+                    wristChecks: metrics.mostWornCount
+                )
+            } else {
+                RewindEmptyFeaturedCard()
+            }
+        }
+    }
+
+    private var statSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("THE NUMBERS")
+                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                .tracking(3)
+                .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+
+            HStack(spacing: 0) {
+                RewindStatCell(label: "TOTAL WEARS", value: "\(metrics.totalWristChecks)", unit: nil, valueFontSize: 46, showsDivider: false)
+                RewindStatCell(label: "LONGEST STREAK", value: "\(metrics.longestWearStreak)", unit: "days", valueFontSize: 46, showsDivider: true)
+                RewindStatCell(label: "WATCHES WORN", value: "\(metrics.distinctWatchesWorn)", unit: nil, valueFontSize: 46, showsDivider: true)
+                RewindStatCell(label: "TOP BRAND", value: (favoriteBrand?.isEmpty == false) ? favoriteBrand! : "—", unit: nil, valueFontSize: 38, showsDivider: true)
+            }
+            .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            )
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 12) {
+            ShareCardWatermark()
+            Text("CAPTURED WITH WRISTSCAN")
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .tracking(2)
+                .foregroundColor(Color(red: 0.435, green: 0.435, blue: 0.467))
         }
     }
 }
 
-private struct ShareMetricPill: View {
-    let title: String
-    let value: String
+private struct RewindFeaturedCard: View {
+    let manufacturer: String
+    let modelName: String
+    let image: UIImage?
+    let wristChecks: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundColor(.amberGold)
-                .tracking(1.0)
+        VStack(alignment: .leading, spacing: 0) {
+            photo
+                .frame(height: 626)
+                .clipped()
+                .overlay(scrim)
+                .overlay(alignment: .topLeading) {
+                    RewindMedalBadge()
+                        .padding(24)
+                }
 
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.white)
+            caption
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
         .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.amberGold.opacity(0.22), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.45), radius: 30, y: 30)
+    }
+
+    @ViewBuilder
+    private var photo: some View {
+        if let image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+        } else {
+            ZStack {
+                Color(red: 0.16, green: 0.16, blue: 0.19)
+                Image(systemName: "clock")
+                    .font(.system(size: 40))
+                    .foregroundColor(.amberGold.opacity(0.3))
+            }
+        }
+    }
+
+    private var scrim: some View {
+        LinearGradient(
+            gradient: Gradient(stops: [
+                .init(color: Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0), location: 0.55),
+                .init(color: Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0.55), location: 0.82),
+                .init(color: Color(red: 0.12, green: 0.12, blue: 0.14), location: 1.0)
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .allowsHitTesting(false)
+    }
+
+    private var caption: some View {
+        HStack(alignment: .bottom, spacing: 24) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(manufacturer.uppercased())
+                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .tracking(2.5)
+                    .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+
+                Text(modelName.isEmpty ? "No winner yet" : modelName)
+                    .font(.system(size: 74, weight: .heavy))
+                    .tracking(-1.5)
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.4)
+                    .layoutPriority(1)
+            }
+
+            Spacer(minLength: 16)
+
+            VStack(spacing: 4) {
+                Text("\(wristChecks)")
+                    .font(.system(size: 42, weight: .heavy))
+                    .foregroundColor(.amberGold)
+
+                Text("WRIST CHECKS")
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .tracking(1.5)
+                    .foregroundColor(.amberGold.opacity(0.85))
+            }
+            .padding(.vertical, 16)
+            .padding(.horizontal, 22)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.amberGold.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.amberGold.opacity(0.22), lineWidth: 1)
+                    )
+            )
+            .fixedSize()
+        }
+        .padding(.top, 30)
+        .padding(.horizontal, 44)
+        .padding(.bottom, 40)
+    }
+}
+
+private struct RewindMedalBadge: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.078, green: 0.078, blue: 0.086))
+                    .frame(width: 34, height: 34)
+                Text("1")
+                    .font(.system(size: 19, weight: .black, design: .rounded))
+                    .foregroundColor(.amberGold)
+            }
+
+            Text("TOP PICK")
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(Color(red: 0.090, green: 0.082, blue: 0.071))
+        }
+        .padding(.leading, 9)
+        .padding(.trailing, 18)
+        .padding(.vertical, 9)
+        .background(Capsule().fill(Color.amberGold))
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 8)
+    }
+}
+
+private struct RewindEmptyFeaturedCard: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 30)
+            .fill(Color(red: 0.12, green: 0.12, blue: 0.14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 30)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .frame(height: 320)
+            .overlay(
+                VStack(spacing: 14) {
+                    Image(systemName: "clock.badge.questionmark")
+                        .font(.system(size: 40))
+                        .foregroundColor(Color(red: 0.435, green: 0.435, blue: 0.467))
+
+                    Text("No wear data in this period.")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+                }
+            )
+    }
+}
+
+private struct RewindStatCell: View {
+    let label: String
+    let value: String
+    let unit: String?
+    let valueFontSize: CGFloat
+    let showsDivider: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(label)
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(.amberGold)
+
+            valueText
+                .lineLimit(1)
+                .minimumScaleFactor(0.55)
+        }
+        .padding(.vertical, 32)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .leading) {
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(width: 1)
+            }
+        }
+    }
+
+    private var valueText: Text {
+        let number = Text(value)
+            .font(.system(size: valueFontSize, weight: .heavy))
+            .foregroundColor(.white)
+
+        guard let unit else { return number }
+
+        let unitText = Text(" " + unit)
+            .font(.system(size: 21, weight: .bold))
+            .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+
+        return number + unitText
     }
 }
 
