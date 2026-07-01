@@ -369,11 +369,14 @@ struct AnalyticsDashboardView: View {
                     .foregroundStyle(Color.amberGold.gradient)
                     .cornerRadius(6)
                 }
-                .frame(height: 250)
+                .frame(height: 290)
                 .animation(.easeInOut, value: selectedFrequencyMetric)
                 .chartXAxis {
+                    // Long watch names collide when laid out horizontally under narrow
+                    // bars, so labels run vertically instead — each gets its own lane
+                    // regardless of name length.
                     AxisMarks(values: .automatic) { _ in
-                        AxisValueLabel()
+                        AxisValueLabel(orientation: .verticalReversed)
                             .font(.system(size: 10))
                             .foregroundStyle(Color.white.opacity(0.6))
                     }
