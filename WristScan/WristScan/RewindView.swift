@@ -1,47 +1,14 @@
 import SwiftUI
 import SwiftData
 
-enum ReportPeriod: String, CaseIterable {
-    case lastMonth = "Last Month"
-    case lastYear = "Last Year"
-    case thisYear = "This Year"
-    case allTime = "All Time"
-}
-
 struct RewindView: View {
     @Query private var timepieces: [WatchTimepiece]
     @State private var selectedPeriod: ReportPeriod = .lastYear
-    
+
     @State private var engine = RewindEngine()
-    
+
     @State private var cachedWinnerImage: UIImage? = nil
-    
-    var dateRange: (start: Date, end: Date) {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        switch selectedPeriod {
-        case .lastMonth:
-            let components = calendar.dateComponents([.year, .month], from: now)
-            let startOfThisMonth = calendar.date(from: components) ?? now
-            let startOfLastMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth) ?? now
-            let endOfLastMonth = calendar.date(byAdding: .second, value: -1, to: startOfThisMonth) ?? now
-            return (startOfLastMonth, endOfLastMonth)
-        case .lastYear:
-            let components = calendar.dateComponents([.year], from: now)
-            let startOfThisYear = calendar.date(from: components) ?? now
-            let startOfLastYear = calendar.date(byAdding: .year, value: -1, to: startOfThisYear) ?? now
-            let endOfLastYear = calendar.date(byAdding: .second, value: -1, to: startOfThisYear) ?? now
-            return (startOfLastYear, endOfLastYear)
-        case .thisYear:
-            let components = calendar.dateComponents([.year], from: now)
-            let startOfYear = calendar.date(from: components) ?? now
-            return (startOfYear, now)
-        case .allTime:
-            return (.distantPast, .distantFuture)
-        }
-    }
-    
+
     var body: some View {
         NavigationStack {
             // KEY FIX: Picker is OUTSIDE the ScrollView.
@@ -153,6 +120,7 @@ struct RewindView: View {
             .navigationTitle("The Rewind")
             .navigationBarTitleDisplayMode(.inline)
             .task(id: selectedPeriod) {
+                let dateRange = selectedPeriod.dateRange
                 await engine.generateReport(for: timepieces, start: dateRange.start, end: dateRange.end)
                 // Decode image on a background thread — UIImage(data:) is thread-safe
                 // and can block the main thread for large photos if run inline.

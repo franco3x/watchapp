@@ -16,7 +16,7 @@ struct SheetDate: Identifiable {
 }
 
 enum DistributionMetric: String, CaseIterable {
-    case watch = "Individual Watch"
+    case watch = "Watch"
     case brand = "Brand"
     case watchType = "Watch Type"
     case movementType = "Movement Type"
@@ -31,6 +31,7 @@ struct AnalyticsDashboardView: View {
 
     @State private var selectedDistribution: DistributionMetric = .brand
     @State private var selectedFrequencyMetric: DistributionMetric = .watch
+    @State private var selectedFrequencyPeriod: ReportPeriod = .allTime
     @State private var selectedCalendarDate: SheetDate? = nil
     @State private var selectedWatchesForLog: Set<WatchTimepiece> = []
 
@@ -62,7 +63,8 @@ struct AnalyticsDashboardView: View {
 
     var frequencyDistribution: [(category: String, count: Int)] {
         var aggregatedData: [String: Int] = [:]
-        
+        let range = selectedFrequencyPeriod.dateRange
+
         for timepiece in timepieces {
             let category: String
             switch selectedFrequencyMetric {
@@ -73,13 +75,16 @@ struct AnalyticsDashboardView: View {
             case .dialColor: category = timepiece.dialColor
             case .caseMaterial: category = timepiece.caseMaterial
             }
-            
+
             guard !category.isEmpty else { continue }
-            
-            // Use the existing timesWorn integer property
-            aggregatedData[category, default: 0] += timepiece.timesWorn
+
+            // Count wear-history entries inside the selected window rather than the
+            // all-time timesWorn counter, so the time-window picker actually filters.
+            let checksInPeriod = timepiece.wearHistory.filter { $0 >= range.start && $0 <= range.end }.count
+            guard checksInPeriod > 0 else { continue }
+            aggregatedData[category, default: 0] += checksInPeriod
         }
-        
+
         return aggregatedData.map { (category: $0.key, count: $0.value) }
                              .sorted { $0.count > $1.count }
                              .prefix(5)
@@ -326,40 +331,77 @@ struct AnalyticsDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Top 5 Wrist Checks")
 
-            Menu {
-                ForEach(DistributionMetric.allCases, id: \.self) { metric in
-                    Button(action: { selectedFrequencyMetric = metric }) {
-                        HStack {
-                            Text(metric.rawValue)
-                            if selectedFrequencyMetric == metric {
-                                Image(systemName: "checkmark")
+            HStack(spacing: 10) {
+                Menu {
+                    ForEach(DistributionMetric.allCases, id: \.self) { metric in
+                        Button(action: { selectedFrequencyMetric = metric }) {
+                            HStack {
+                                Text(metric.rawValue)
+                                if selectedFrequencyMetric == metric {
+                                    Image(systemName: "checkmark")
+                                }
                             }
                         }
                     }
+                } label: {
+                    HStack {
+                        Text("By \(selectedFrequencyMetric.rawValue)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
                 }
-            } label: {
-                HStack {
-                    Text("By \(selectedFrequencyMetric.rawValue)")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.amberGold)
+
+                Menu {
+                    ForEach(ReportPeriod.allCases, id: \.self) { period in
+                        Button(action: { selectedFrequencyPeriod = period }) {
+                            HStack {
+                                Text(period.rawValue)
+                                if selectedFrequencyPeriod == period {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(selectedFrequencyPeriod.rawValue)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.amberGold)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(red: 0.12, green: 0.12, blue: 0.14))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
             }
             .padding(.bottom, 8)
 
             if frequencyDistribution.isEmpty {
-                missingDataLabel("No data available for this metric.")
+                missingDataLabel("No wear data for this metric in the selected time window.")
             } else {
                 Chart(frequencyDistribution, id: \.category) { item in
                     BarMark(
@@ -371,6 +413,7 @@ struct AnalyticsDashboardView: View {
                 }
                 .frame(height: 290)
                 .animation(.easeInOut, value: selectedFrequencyMetric)
+                .animation(.easeInOut, value: selectedFrequencyPeriod)
                 .chartXAxis {
                     // Long watch names collide when laid out horizontally under narrow
                     // bars, so labels run vertically instead — each gets its own lane
