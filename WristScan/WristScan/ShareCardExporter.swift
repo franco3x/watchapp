@@ -343,3 +343,50 @@ struct ShareCardWatermark: View {
         }
     }
 }
+
+/// A labeled stat cell (amber label + big value, with an optional smaller unit suffix and
+/// an optional leading divider) used in the multi-column stat strips across share cards.
+struct ShareStatCell: View {
+    let label: String
+    let value: String
+    let unit: String?
+    let valueFontSize: CGFloat
+    let showsDivider: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(label)
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(.amberGold)
+
+            valueText
+                .lineLimit(1)
+                .minimumScaleFactor(0.55)
+        }
+        .padding(.vertical, 32)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .leading) {
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(width: 1)
+            }
+        }
+    }
+
+    private var valueText: Text {
+        let number = Text(value)
+            .font(.system(size: valueFontSize, weight: .heavy))
+            .foregroundColor(.white)
+
+        guard let unit else { return number }
+
+        let unitText = Text(" " + unit)
+            .font(.system(size: 21, weight: .bold))
+            .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+
+        return number + unitText
+    }
+}

@@ -97,6 +97,7 @@ Living project tracker, starting from today forward. Already-shipped functionali
 ### Not Started
 
 - [ ] Epic 3 — redesign the visual layout/branding of all four share card images together, for consistency (currently functional but reuses the original plain Rewind card styling)
+- [ ] Epic 3 - a more full version of the shared image that is really like Spotify wrapped
 - [ ] Epic 4 — CSV import parser for historical wear data
 - [ ] Epic 5 — LLM JSON generation engine (OCR text / reference number → structured specs)
 - [ ] Epic 5 — cloud read-through cache backend

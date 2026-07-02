@@ -261,10 +261,10 @@ private struct RewindShareCard: View {
                 .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
 
             HStack(spacing: 0) {
-                RewindStatCell(label: "TOTAL WEARS", value: "\(metrics.totalWristChecks)", unit: nil, valueFontSize: 46, showsDivider: false)
-                RewindStatCell(label: "LONGEST STREAK", value: "\(metrics.longestWearStreak)", unit: "days", valueFontSize: 46, showsDivider: true)
-                RewindStatCell(label: "WATCHES WORN", value: "\(metrics.distinctWatchesWorn)", unit: nil, valueFontSize: 46, showsDivider: true)
-                RewindStatCell(label: "TOP BRAND", value: (favoriteBrand?.isEmpty == false) ? favoriteBrand! : "—", unit: nil, valueFontSize: 38, showsDivider: true)
+                ShareStatCell(label: "TOTAL WEARS", value: "\(metrics.totalWristChecks)", unit: nil, valueFontSize: 46, showsDivider: false)
+                ShareStatCell(label: "LONGEST STREAK", value: "\(metrics.longestWearStreak)", unit: "days", valueFontSize: 46, showsDivider: true)
+                ShareStatCell(label: "WATCHES WORN", value: "\(metrics.distinctWatchesWorn)", unit: nil, valueFontSize: 46, showsDivider: true)
+                ShareStatCell(label: "TOP BRAND", value: (favoriteBrand?.isEmpty == false) ? favoriteBrand! : "—", unit: nil, valueFontSize: 38, showsDivider: true)
             }
             .background(Color(red: 0.12, green: 0.12, blue: 0.14))
             .clipShape(RoundedRectangle(cornerRadius: 28))
@@ -438,50 +438,6 @@ private struct RewindEmptyFeaturedCard: View {
     }
 }
 
-private struct RewindStatCell: View {
-    let label: String
-    let value: String
-    let unit: String?
-    let valueFontSize: CGFloat
-    let showsDivider: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(label)
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                .tracking(1.5)
-                .foregroundColor(.amberGold)
-
-            valueText
-                .lineLimit(1)
-                .minimumScaleFactor(0.55)
-        }
-        .padding(.vertical, 32)
-        .padding(.horizontal, 28)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .leading) {
-            if showsDivider {
-                Rectangle()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(width: 1)
-            }
-        }
-    }
-
-    private var valueText: Text {
-        let number = Text(value)
-            .font(.system(size: valueFontSize, weight: .heavy))
-            .foregroundColor(.white)
-
-        guard let unit else { return number }
-
-        let unitText = Text(" " + unit)
-            .font(.system(size: 21, weight: .bold))
-            .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
-
-        return number + unitText
-    }
-}
 
 struct ReportMetricCard: View {
     let title: String

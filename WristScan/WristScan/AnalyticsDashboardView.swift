@@ -175,7 +175,7 @@ struct AnalyticsDashboardView: View {
 
     private func shareDistributionChart() async {
         let card = DistributionShareCard(
-            metricLabel: "By \(selectedDistribution.rawValue)",
+            metricLabel: selectedDistribution.rawValue,
             distribution: dynamicDistribution,
             sectorColors: sectorColors
         )
@@ -619,61 +619,191 @@ private struct DistributionShareCard: View {
     let distribution: [(category: String, count: Int)]
     let sectorColors: [Color]
 
+    private var total: Int {
+        distribution.reduce(0) { $0 + $1.count }
+    }
+
+    private var topEntry: (category: String, count: Int)? {
+        distribution.first
+    }
+
+    private var topPercentage: Int {
+        guard total > 0, let topEntry else { return 0 }
+        return Int((Double(topEntry.count) / Double(total) * 100).rounded())
+    }
+
     var body: some View {
         ZStack {
-            Color(red: 0.07, green: 0.07, blue: 0.08)
-                .ignoresSafeArea()
+            ShareCardBackground()
 
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("WristScan Insights")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 0) {
+                header
+
+                donutAndLegendCard
+                    .padding(.top, 40)
+
+                summaryStats
+                    .padding(.top, 28)
+
+                footer
+                    .padding(.top, 30)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 72)
+            .padding(.top, 64)
+            .padding(.bottom, 56)
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("WRISTSCAN INSIGHTS")
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .tracking(3.5)
+                    .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+
+                Text("Collection by \(metricLabel)")
+                    .font(.system(size: 50, weight: .heavy, design: .rounded))
+                    .tracking(-0.8)
+                    .foregroundColor(.white)
+            }
+
+            Spacer()
+
+            SharePeriodPill(label: "\(total) WATCHES")
+                .padding(.top, 6)
+        }
+    }
+
+    private var donutAndLegendCard: some View {
+        HStack(spacing: 56) {
+            donut
+            legend
+        }
+        .padding(.vertical, 56)
+        .padding(.horizontal, 60)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 30, y: 30)
+    }
+
+    private var donut: some View {
+        ZStack {
+            Chart(distribution, id: \.category) { item in
+                SectorMark(
+                    angle: .value("Count", item.count),
+                    innerRadius: .ratio(0.557),
+                    angularInset: 0
+                )
+                .foregroundStyle(by: .value("Category", item.category))
+            }
+            .chartLegend(.hidden)
+            .chartForegroundStyleScale(
+                domain: distribution.map(\.category),
+                range: Array(sectorColors.prefix(distribution.count))
+            )
+
+            VStack(spacing: 6) {
+                Text("\(total)")
+                    .font(.system(size: 86, weight: .heavy))
+                    .foregroundColor(.white)
+                Text("WATCHES")
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .tracking(3)
+                    .foregroundColor(Color(red: 0.545, green: 0.545, blue: 0.573))
+            }
+        }
+        .frame(width: 470, height: 470)
+    }
+
+    private var legend: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(distribution.prefix(6).enumerated()), id: \.element.category) { index, item in
+                HStack(spacing: 16) {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(sectorColors[index % sectorColors.count])
+                        .frame(width: 16, height: 16)
+
+                    Text(item.category.uppercased())
+                        .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                        .tracking(1.5)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text("\(item.count)")
+                        .font(.system(size: 22, weight: .heavy))
                         .foregroundColor(.white)
 
-                    Text("Collection Distribution — \(metricLabel)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
+                    Text(percentageLabel(for: item))
+                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                        .foregroundColor(Color(red: 0.498, green: 0.498, blue: 0.529))
+                        .frame(width: 54, alignment: .trailing)
                 }
-
-                Chart(distribution, id: \.category) { item in
-                    SectorMark(
-                        angle: .value("Count", item.count),
-                        innerRadius: .ratio(0.55),
-                        angularInset: 2
-                    )
-                    .foregroundStyle(by: .value("Category", item.category))
-                    .cornerRadius(4)
-                }
-                .frame(height: 420)
-                .chartLegend(position: .bottom, alignment: .center, spacing: 12)
-                .chartForegroundStyleScale(
-                    domain: distribution.map(\.category),
-                    range: Array(sectorColors.prefix(distribution.count))
-                )
-
-                VStack(spacing: 8) {
-                    ForEach(distribution.prefix(6), id: \.category) { item in
-                        HStack {
-                            Text(item.category.uppercased())
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                .foregroundColor(.white.opacity(0.8))
-                                .tracking(1.0)
-                            Spacer()
-                            Text("\(item.count) watch\(item.count == 1 ? "" : "es")")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.gray)
-                        }
-                        if item.category != distribution.prefix(6).last?.category {
-                            Divider().background(Color.white.opacity(0.08))
-                        }
+                .padding(.vertical, 16)
+                .overlay(alignment: .bottom) {
+                    if index != min(distribution.count, 6) - 1 {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(height: 1)
                     }
                 }
-
-                Text("Captured with WristScan")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.8))
             }
-            .padding(28)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func percentageLabel(for item: (category: String, count: Int)) -> String {
+        guard total > 0 else { return "0%" }
+        let percent = Int((Double(item.count) / Double(total) * 100).rounded())
+        return "\(percent)%"
+    }
+
+    private var summaryStats: some View {
+        HStack(spacing: 0) {
+            ShareStatCell(
+                label: "TOP \(metricLabel.uppercased())",
+                value: topEntry?.category ?? "—",
+                unit: nil,
+                valueFontSize: 40,
+                showsDivider: false
+            )
+            ShareStatCell(
+                label: "CATEGORIES",
+                value: "\(distribution.count)",
+                unit: nil,
+                valueFontSize: 40,
+                showsDivider: true
+            )
+            ShareStatCell(
+                label: "% OF COLLECTION",
+                value: "\(topPercentage)",
+                unit: "%",
+                valueFontSize: 40,
+                showsDivider: true
+            )
+        }
+        .background(Color(red: 0.12, green: 0.12, blue: 0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: 12) {
+            ShareCardWatermark()
+            Text("CAPTURED WITH WRISTSCAN")
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .tracking(2)
+                .foregroundColor(Color(red: 0.435, green: 0.435, blue: 0.467))
         }
     }
 }
