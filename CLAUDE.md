@@ -44,7 +44,7 @@ WristScan is a specialized iOS application designed to catalog and track persona
 * **EditWatchView (with EditWatchSheetContainer):** The data entry form for updating watch specifications, housing the photo selection intercept logic.
 * **ImageAdjusterView:** A custom cropping engine that allows users to pan and zoom high-resolution photos, utilizing `ImageRenderer` to capture and save a lightweight, screen-resolution crop.
 * **AnalyticsDashboardView / RewindView (Epic 2):** `AnalyticsDashboardView` is the Insights tab landing screen; it links to `RewindView`, a generated analytics report providing insights into collection wear habits over a selected period. Report logic lives in `RewindEngine`.
-* **Share-as-image (Epic 3):** A shared `ShareCardExporter.swift` component (`ShareCardCoordinator` + `ShareCardPreviewSheet`) lets a screen render a SwiftUI view off-screen into an image, preview it, share it via the system share sheet, or save it to Photos — with permission handling, temp-file cleanup, and success/error feedback all handled once, centrally. Currently wired up on `RewindView` (the full report card), `WatchDetailView` (a single watch's card), and `AnalyticsDashboardView` (the Collection Distribution and Top 5 Wrist Checks charts). The exported cards' visual design is intentionally plain for now; a follow-up redesign pass is tracked below.
+* **Share-as-image (Epic 3):** A shared `ShareCardExporter.swift` component (`ShareCardCoordinator` + `ShareCardPreviewSheet`) lets a screen render a SwiftUI view off-screen into an image, preview it, share it via the system share sheet, or save it to Photos — with permission handling, temp-file cleanup, and success/error feedback all handled once, centrally. Currently wired up on `RewindView` (the full report card), `WatchDetailView` (a single watch's card), and `AnalyticsDashboardView` (the Collection Distribution and Top 5 Wrist Checks charts). All four exported card designs have been through a visual redesign pass (dark gradient background, amber accent details, and shared primitives like `ShareCardBackground`/`SharePeriodPill`/`ShareCardWatermark`/`ShareStatCell`); a more ambitious "Spotify Wrapped"-style version is tracked below as a follow-up.
 * **WatchScannerView:** The camera interface for capturing watch faces. Uses Apple's Vision framework to extract raw dial text on-device, then fuzzy-matches it against the local `WatchCatalogItem` reference database to identify the watch. This is the non-AI matching path; the LLM enrichment fallback described under Epic 5 is not yet built.
 * **AtomicClockManager / AtomicClockDashboardView / AccuracyCheckView:** A zero-dependency NTP (network time) client that queries `pool.ntp.org` directly to get true time independent of the device's own clock, so accuracy-ledger entries are checked against a trustworthy reference rather than a potentially-wrong iPhone clock.
 * **WristCheckCalendarView / ManualWristCheckView:** A calendar heatmap of a watch's wear history, plus a manual-entry flow for logging (or backfilling) a wrist check for a past date.
@@ -89,6 +89,7 @@ Living project tracker, starting from today forward. Already-shipped functionali
 - [x] Insights: fixed overlapping x-axis labels on the Top 5 Wrist Checks bar chart
 - [x] Insights: added a time-window filter (Last Month / Last Year / This Year / All Time) to Top 5 Wrist Checks
 - [x] Epic 3 — share-as-image mechanism: Save to Photos + system share sheet for the Rewind report, individual watch detail cards, and both Insights charts, via shared `ShareCardExporter.swift`
+- [x] Epic 3 — redesigned the visual layout/branding of all four share card images (Rewind, Watch Detail, Wear Chart leaderboard, Collection Distribution donut) for consistency, via shared primitives (`ShareCardBackground`, `SharePeriodPill`, `ShareCardWatermark`, `ShareStatCell`) in `ShareCardExporter.swift`
 
 ### In Progress
 
@@ -96,7 +97,6 @@ Living project tracker, starting from today forward. Already-shipped functionali
 
 ### Not Started
 
-- [ ] Epic 3 — redesign the visual layout/branding of all four share card images together, for consistency (currently functional but reuses the original plain Rewind card styling)
 - [ ] Epic 3 - a more full version of the shared image that is really like Spotify wrapped
 - [ ] Epic 4 — CSV import parser for historical wear data
 - [ ] Epic 5 — LLM JSON generation engine (OCR text / reference number → structured specs)
